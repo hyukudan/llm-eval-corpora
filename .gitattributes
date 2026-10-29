@@ -1,0 +1,4 @@
+# Manifests and frozen data are hashed byte for byte: never convert line endings.
+*.json -text
+*.jsonl -text
+*.txt -text

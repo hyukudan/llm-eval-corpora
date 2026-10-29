@@ -1,0 +1,4 @@
+# Frozen data is hashed byte for byte: never convert line endings.
+data/** -text
+*.jsonl -text
+*.gz binary

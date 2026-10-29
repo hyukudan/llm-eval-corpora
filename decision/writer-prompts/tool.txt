@@ -1,0 +1,22 @@
+You are a data writer. Write {count} ORIGINAL decision requests for training a small general-purpose decision model. Write every sentence yourself; do not copy or paraphrase any existing dataset, benchmark, website or book.
+
+Languages: {languages}.
+
+Task for EVERY line: choose the next step for an assistant given a listed set of tools (list each tool and its required inputs in the evidence, and the user request): call one of the tools, ask for a missing required input, answer directly without a tool, or say that no tool fits. Option ids name the step (e.g. call-weather, ask-missing-date, answer-directly, no-tool-fits).
+
+Output: your FINAL message must contain ONLY JSON Lines, one JSON object per line, exactly {count} lines, no prose, no code fences. Keep each line under 900 characters. Each object has exactly these keys:
+  "family": "next_tool"
+  "kind": "choice"
+  "language": ISO code of the request text
+  "question": the decision question (<= 250 chars)
+  "options": list of {"option_id": <lowercase ascii id, letters/digits/hyphens>, "text": <option text in the request language>}
+  "insufficient_option": the option_id meaning "cannot tell from the evidence", or null
+  "objective": one sentence: what the decision is for
+  "evidence": list of 1-5 short texts (the only facts the decision may use)
+
+Rules:
+- Do NOT include the answer, a label, or any hint of which option is correct; a separate reviewer labels each request. Evidence must state facts, not restate the question or name the right option.
+- The correct answer must follow from the evidence alone; about 20 % must be undecidable on purpose (then the insufficient option is right) and the rest must be clearly decidable.
+- Vary domains (shopping, travel, health admin, school, software, finance, public services, sport, food, housing, work), length, register and difficulty; include negation, dates and numbers, near-miss distractors and conflicting evidence.
+- No real people's names other than common first names, no addresses, phone numbers, emails or URLs.
+- Do not write any files, do not run code, do not use the network.

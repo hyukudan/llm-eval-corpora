@@ -1,0 +1,15 @@
+{
+ "datasets": {
+  "wikimedia/wikipedia": {"revision": "b04c8d1ceb2f5cd4588862100d08de323dccfbaa", "configs": ["20231101.en", "20231101.es"], "licence": "CC BY-SA 4.0 (Wikipedia text)", "attribution": "Wikipedia contributors; page URL per item"},
+  "argilla/databricks-dolly-15k-curated-multilingual": {"revision": "5f466e5af11fb82ea610acc5cf983dcb3a025840", "splits": ["en", "es"], "licence": "CC BY-SA 3.0", "attribution": "Databricks, Inc. (databricks-dolly-15k); curated multilingual version by Argilla"},
+  "OpenAssistant/oasst2": {"revision": "179dd21fc55192153d94adb0e0ce8f69e222bf75", "licence": "Apache-2.0", "attribution": "OpenAssistant contributors (Köpf et al., 2023)"}
+ },
+ "files": {
+  "oasst2": {"sha256": "7a886a16ccfc1173c4f00a6897523e3c95b2785a86ee44a18a98f4f2807ee29b", "licence": "Apache-2.0"},
+  "sqlite": {"sha256": "77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784", "licence": "public domain (SQLite blessing)"},
+  "lua": {"sha256": "9fbf5e28ef86c69858f6d3d34eccc32e911c1a28b4120ff3e84aaa70cfbf1e30", "licence": "MIT"},
+  "lodash": {"sha256": "4c04561befdf653aef017a42ac5addf68ea943cdfca6bdee5ce04e04e8139f54", "licence": "MIT"},
+  "d3": {"sha256": "0c0d58be2106c14e242fc75bc09a17467800630751580665f6e9552a0c064ea2", "licence": "ISC"},
+  "cpython": {"sha256": "6c9d80839cfa20024f34d9a6dd31ae2a9cd97ff5e980e969209746037a5153b2", "licence": "PSF-2.0"}
+ }
+}

@@ -1,0 +1,22 @@
+You are a data writer. Write {count} ORIGINAL decision requests for training a small general-purpose decision model. Write every sentence yourself; do not copy or paraphrase any existing dataset, benchmark, website or book.
+
+Languages for this batch: {languages} (spread roughly evenly).
+
+Output: your FINAL message must contain ONLY JSON Lines, one JSON object per line, {count} lines, no prose, no code fences. Each object has exactly these keys:
+  "family": one of "classify", "entail", "grade", "route", "next_tool"
+  "kind": "choice" | "yes_no" | "score"
+  "language": ISO code of the request text (e.g. "es")
+  "question": the decision question (<= 300 chars)
+  "options": list of {"option_id": <lowercase ascii id, letters/digits/hyphens>, "text": <option text in the request language>}; for kind "score" each answer option also has "level": an integer, levels strictly increasing in list order
+  "insufficient_option": the option_id meaning "cannot tell from the evidence", or null
+  "objective": one sentence: what the decision is for
+  "evidence": list of 1-6 short texts (the only facts the decision may use)
+
+Rules:
+- kind "yes_no": options are exactly "yes" then "no" (texts in the request language), plus optionally an insufficient option last.
+- Do NOT include the answer, a label, or a hint of which option is correct. A separate reviewer labels each request.
+- The correct answer must follow from the evidence alone (or be the insufficient option when the evidence does not decide it). About 15 % of requests should be undecidable from the evidence on purpose.
+- Mix of tasks (approximate): 25 % topic/intent/sentiment classification of a short message (classify, 3-8 options, include "other" sometimes); 25 % entailment of a claim by a note (entail, options supported / contradicted / insufficient); 15 % yes/no questions answerable from a short passage (classify, yes_no); 15 % ordinal grading such as urgency, severity, quality or sentiment strength (grade, score, 3-5 levels); 10 % routing a request to a team or queue (route); 10 % choosing the next tool from a listed tool set, or asking for a missing parameter, or "no tool fits" (next_tool).
+- Vary domains (shopping, travel, health admin, school, software, finance, public services, sport, food, housing), length, register and difficulty. Include hard cases: negation, sarcasm, dates and numbers, distractor options that are almost right, the correct option missing so "other"/"none" applies, and conflicting evidence.
+- No real people's names other than common first names, no real companies' private data, no addresses, phone numbers, emails or URLs.
+- Do not write any files, do not run code, do not use the network.

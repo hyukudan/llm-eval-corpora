@@ -1,0 +1,621 @@
+{
+ "name": "gutenberg-prose-v1",
+ "description": "50 public-domain Project Gutenberg books, header/licence/footer stripped, concatenated in this order.",
+ "licence": "Public domain in the USA (Project Gutenberg). Bodies are distributed without the Project Gutenberg trademark/licence text.",
+ "source_url_template": "https://www.gutenberg.org/cache/epub/{id}/pg{id}.txt",
+ "frozen_download_date": "2026-10-29",
+ "books": [
+  {
+   "id": "1342",
+   "title": "Pride and Prejudice",
+   "author": "Jane Austen",
+   "language": "en",
+   "raw_sha256": "3f6bb9d6f78e0293b56acd4714dd68cb7d6d1d293402031ce9d5a216bcaf9d75",
+   "body_sha256": "166dad8ac5796242f82ed6648927a6e483680a31fd1442db090d03e5eee128b2",
+   "body_bytes": 737915,
+   "url": "https://www.gutenberg.org/ebooks/1342"
+  },
+  {
+   "id": "84",
+   "title": "Frankenstein; or, The modern Prometheus",
+   "author": "Mary Wollstonecraft Shelley",
+   "language": "en",
+   "raw_sha256": "2b97b7f8aad508649481d8dd4f6b54f9b965ddb3ba634e9151c815f537b49e42",
+   "body_sha256": "5c203149c187c21c430b54f8140bdb07a70e6287fbda02e4a39b1e0ec6fea06c",
+   "body_bytes": 421537,
+   "url": "https://www.gutenberg.org/ebooks/84"
+  },
+  {
+   "id": "1661",
+   "title": "The Adventures of Sherlock Holmes",
+   "author": "Arthur Conan Doyle",
+   "language": "en",
+   "raw_sha256": "922e2a12ccb43a4c9544c260b2166c6ad2097aeb5957faeee113f173bb857cd0",
+   "body_sha256": "e6be295322266f8d1dacf0e7fa54c3af1212c0d47fdfdac6a932904892f05942",
+   "body_bytes": 575795,
+   "url": "https://www.gutenberg.org/ebooks/1661"
+  },
+  {
+   "id": "2701",
+   "title": "Moby Dick; Or, The Whale",
+   "author": "Herman Melville",
+   "language": "en",
+   "raw_sha256": "b5e88b71a1cda068e9ab1d94344c9d932338ba6da1a66def97a1aecd9cfcc87d",
+   "body_sha256": "07b146177372cbc208db704ee96def94ebf07aedd4da4a78bb3bbe586874ea64",
+   "body_bytes": 1234543,
+   "url": "https://www.gutenberg.org/ebooks/2701"
+  },
+  {
+   "id": "98",
+   "title": "A Tale of Two Cities",
+   "author": "Charles Dickens",
+   "language": "en",
+   "raw_sha256": "d54c2b80d40a40b982cd88852c6180bb944d95acdb028af3d0e01a1750681784",
+   "body_sha256": "3f1fd718c2ff21a7d6360d1525c87b300514c3e9d2c6ac789bab87810b4d9dca",
+   "body_bytes": 771504,
+   "url": "https://www.gutenberg.org/ebooks/98"
+  },
+  {
+   "id": "11",
+   "title": "Alice's Adventures in Wonderland",
+   "author": "Lewis Carroll",
+   "language": "en",
+   "raw_sha256": "01b38ea4c710a84bc18d0bd41271a5a1a92b94e97b2812f4dece97d4a694725e",
+   "body_sha256": "56cd65efc2341222ef8be930da8b36ae6079a04b699ed47a0702cd134dc0a34e",
+   "body_bytes": 151096,
+   "url": "https://www.gutenberg.org/ebooks/11"
+  },
+  {
+   "id": "1952",
+   "title": "The Yellow Wallpaper",
+   "author": "Charlotte Perkins Gilman",
+   "language": "en",
+   "raw_sha256": "20c7788eeae2fe3a0efd51a1f08b6723366a4be0778d65db219149a3522651d4",
+   "body_sha256": "17f0170ebd49b1700b17d3eaba3368618c2b03fec51f9a97a2a834e1b1600a57",
+   "body_bytes": 31905,
+   "url": "https://www.gutenberg.org/ebooks/1952"
+  },
+  {
+   "id": "345",
+   "title": "Dracula",
+   "author": "Bram Stoker",
+   "language": "en",
+   "raw_sha256": "96cd16eacdbfebae8fdda5591f66e0cc8ee76be18e0cd1aca02bc00615782d28",
+   "body_sha256": "f2eec4cc12557b00f473202ef758a1688c7f7b14fca276480a40bf0786b3e60f",
+   "body_bytes": 855075,
+   "url": "https://www.gutenberg.org/ebooks/345"
+  },
+  {
+   "id": "174",
+   "title": "The Picture of Dorian Gray",
+   "author": "Oscar Wilde",
+   "language": "en",
+   "raw_sha256": "38f36b510417177aa87a6a24c968e3ec63a447b7df36a9c1a7c5a3f2d9e51547",
+   "body_sha256": "6a9ccdfc8ce069c9f3f15098e0fd6864d8288b42eb9c0e65dce15f6d78c4a659",
+   "body_bytes": 437457,
+   "url": "https://www.gutenberg.org/ebooks/174"
+  },
+  {
+   "id": "76",
+   "title": "Adventures of Huckleberry Finn",
+   "author": "Mark Twain",
+   "language": "en",
+   "raw_sha256": "d617a37aa7ae1e1a93dcde2634db2bccb86824e31e29a55230bdbf77d6872d59",
+   "body_sha256": "a8356cbc81217cd45ac3ca1ce2f5707532bcf8f1ae00627b7678fc7ede425144",
+   "body_bytes": 590658,
+   "url": "https://www.gutenberg.org/ebooks/76"
+  },
+  {
+   "id": "1260",
+   "title": "Jane Eyre: An Autobiography",
+   "author": "Charlotte Brontë",
+   "language": "en",
+   "raw_sha256": "13414dee2951c3ee731d76d2ffd822016b2479c892162760c5d0eb2aa5fa7631",
+   "body_sha256": "b506f0d6af55da3a553b7059a452e0540d69b27039832a803fbfcd6307f6c585",
+   "body_bytes": 1043964,
+   "url": "https://www.gutenberg.org/ebooks/1260"
+  },
+  {
+   "id": "768",
+   "title": "Wuthering Heights",
+   "author": "Emily Brontë",
+   "language": "en",
+   "raw_sha256": "e533fe750589f0421d5d744576315f5c2b9b0d69e981179ea0551bbf134c5e02",
+   "body_sha256": "3778cdf4a46bb465924971bf6379536966f0228d7e37a5cc4a8daa2c5032255f",
+   "body_bytes": 661712,
+   "url": "https://www.gutenberg.org/ebooks/768"
+  },
+  {
+   "id": "158",
+   "title": "Emma",
+   "author": "Jane Austen",
+   "language": "en",
+   "raw_sha256": "532b122b4e6a76cc556d6fdcd729b5892f5c4ce4a1b7060b9f832adfad8680dc",
+   "body_sha256": "d45812a42faf5020ac0be1846974df8089034372a5de73bd890bbb1d77a89dcb",
+   "body_bytes": 897481,
+   "url": "https://www.gutenberg.org/ebooks/158"
+  },
+  {
+   "id": "1400",
+   "title": "Great Expectations",
+   "author": "Charles Dickens",
+   "language": "en",
+   "raw_sha256": "9a637118af8e953e9764ec603d9b0a032883384d465acac2e27966a80cf1c6f8",
+   "body_sha256": "3f8f8483d0686dbe993e513c9636b9eb18bdfed6fff5c79c85c8341bccccf181",
+   "body_bytes": 1018010,
+   "url": "https://www.gutenberg.org/ebooks/1400"
+  },
+  {
+   "id": "46",
+   "title": "A Christmas Carol in Prose; Being a Ghost Story of Christmas",
+   "author": "Charles Dickens",
+   "language": "en",
+   "raw_sha256": "8c36b93723d454982df045ec0efdf2664e5a48e6b5e2f670e883575f75ad0cc8",
+   "body_sha256": "24980fdfae1dd6c59e5998b758fb5b4aa50906052764a6750e90c2bf81206b5d",
+   "body_bytes": 158417,
+   "url": "https://www.gutenberg.org/ebooks/46"
+  },
+  {
+   "id": "16",
+   "title": "Peter Pan",
+   "author": "J. M. Barrie",
+   "language": "en",
+   "raw_sha256": "6b08714281fe38266a756741e4c62915cda7536c2f78cca501f7fd53f3f445ae",
+   "body_sha256": "3beccfdb4cc04bebbfb1885db6b4e73126238f93eb1d4e041c4f539fa5f3dd50",
+   "body_bytes": 262747,
+   "url": "https://www.gutenberg.org/ebooks/16"
+  },
+  {
+   "id": "120",
+   "title": "Treasure Island",
+   "author": "Robert Louis Stevenson",
+   "language": "en",
+   "raw_sha256": "5bc08275eacea8640b1aa185c645283bb8c564d7b23df6b03437d229b4fc6ebd",
+   "body_sha256": "552bd4e5f6c02cf1496c419975e73cf9222efa15c9ed5cdda9c05f7e14590069",
+   "body_bytes": 372621,
+   "url": "https://www.gutenberg.org/ebooks/120"
+  },
+  {
+   "id": "219",
+   "title": "Heart of Darkness",
+   "author": "Joseph Conrad",
+   "language": "en",
+   "raw_sha256": "1bcdf0a1ac611dd6b70a20d100a07085754da4e90a949d6031717b86cd6d020a",
+   "body_sha256": "5086e08dc9d84d5aa09635fa551e3278a6ec1a92f09b1aa967bc3abef21e0705",
+   "body_bytes": 213940,
+   "url": "https://www.gutenberg.org/ebooks/219"
+  },
+  {
+   "id": "36",
+   "title": "The war of the worlds",
+   "author": "H. G. Wells",
+   "language": "en",
+   "raw_sha256": "8417469e3ab664749f7b36ebb85799075818207b0380b54c27d07d592a44117d",
+   "body_sha256": "4caec1b0231fbd9729e8040065e3c076a798540bb55f7d325152e9965b77e50a",
+   "body_bytes": 340505,
+   "url": "https://www.gutenberg.org/ebooks/36"
+  },
+  {
+   "id": "5200",
+   "title": "Metamorphosis",
+   "author": "Franz Kafka",
+   "language": "en",
+   "raw_sha256": "0933283a19a4daaef0d412e8f69c74fae126b0a946cb74b8f3c783a8e869830d",
+   "body_sha256": "ffbc5002e859d31ded9434f75bb06c94997eb58ef592b485b33e6775758cb2b1",
+   "body_bytes": 119758,
+   "url": "https://www.gutenberg.org/ebooks/5200"
+  },
+  {
+   "id": "2000",
+   "title": "Don Quijote",
+   "author": "Miguel de Cervantes Saavedra",
+   "language": "es",
+   "raw_sha256": "534f41d59f7142163fa0964076ac6351845c006ea6433778be637fac6d5b04d7",
+   "body_sha256": "1b7eb6b72935740f435f1f3a507c991dd407072e995c5e200cbfcb851144dcd6",
+   "body_bytes": 2168311,
+   "url": "https://www.gutenberg.org/ebooks/2000"
+  },
+  {
+   "id": "4650",
+   "title": "Candide, ou l'optimisme",
+   "author": "Voltaire",
+   "language": "fr",
+   "raw_sha256": "1cc10ab3268a76aa01bd3f9722ae2ae0e5e36b869a18b0bb0832b75bc0327806",
+   "body_sha256": "f70a05d2715000d1be84fdd2d7be3ee21647a0da77ca5716a0e2dbfc47ca4d0c",
+   "body_bytes": 210646,
+   "url": "https://www.gutenberg.org/ebooks/4650"
+  },
+  {
+   "id": "17489",
+   "title": "Les misérables Tome I: Fantine",
+   "author": "Victor Hugo",
+   "language": "fr",
+   "raw_sha256": "a5de514ba7b9f2e1790e7e259c4e8b7a35ae1d29e4bf9a5f8767039c58b80503",
+   "body_sha256": "dac9253723501fe72d77066182233e0be0ca323dcb6ab474cd461cbe94ac5026",
+   "body_bytes": 676614,
+   "url": "https://www.gutenberg.org/ebooks/17489"
+  },
+  {
+   "id": "2229",
+   "title": "Faust: Der Tragödie erster Teil",
+   "author": "Johann Wolfgang von Goethe",
+   "language": "de",
+   "raw_sha256": "fed2a58edd6910ee96d27ada614d34bcc41f03750d86541c41246bb74c564ff7",
+   "body_sha256": "e2ad62a5cc98d925852acdffcb981a3facd11995eecb26ce03cb67d770dabcf6",
+   "body_bytes": 191444,
+   "url": "https://www.gutenberg.org/ebooks/2229"
+  },
+  {
+   "id": "1012",
+   "title": "La Divina Commedia di Dante",
+   "author": "Dante Alighieri",
+   "language": "it",
+   "raw_sha256": "568035b4af7bda4f69f8ed5dea160f59bcf5b9371c7f2a62a97f94b826c0c1c6",
+   "body_sha256": "0ec23e5640009135f881a08b63dabaeb0d723dc42c7a2f9e80db96512d8e3a27",
+   "body_bytes": 586590,
+   "url": "https://www.gutenberg.org/ebooks/1012"
+  },
+  {
+   "id": "55752",
+   "title": "Dom Casmurro",
+   "author": "Machado de Assis",
+   "language": "pt",
+   "raw_sha256": "0fc3dbf384544d81d87e5a731e67b7976ac3a57acb378f0f354d12a3b52bd0c7",
+   "body_sha256": "7cea50c16b25f16b9ad111695922a94d0fbbc2dbbec4477fc984ca7764d4a926",
+   "body_bytes": 389466,
+   "url": "https://www.gutenberg.org/ebooks/55752"
+  },
+  {
+   "id": "2591",
+   "title": "Grimms' Fairy Tales",
+   "author": "Jacob Grimm",
+   "language": "en",
+   "raw_sha256": "377ebb8ca06cd8bc0b1015ddb54766c44f50dece731c53bb030f1cc00f54092a",
+   "body_sha256": "41f6949b5f1ca841b8c22569472acab785a87c35633ebe214b39f7e60c81f9af",
+   "body_bytes": 531097,
+   "url": "https://www.gutenberg.org/ebooks/2591"
+  },
+  {
+   "id": "1080",
+   "title": "A Modest Proposal",
+   "author": "Jonathan Swift",
+   "language": "en",
+   "raw_sha256": "331340f2ada84a7f79d756a344f6ce7d78026cd1d2359d33f79ca4a13d9f1519",
+   "body_sha256": "eff4a2e6b582b42b8accd25d7fc01c07c0c1e6aea75fabd767fe521d53046f69",
+   "body_bytes": 19513,
+   "url": "https://www.gutenberg.org/ebooks/1080"
+  },
+  {
+   "id": "1232",
+   "title": "The Prince",
+   "author": "Niccolò Machiavelli",
+   "language": "en",
+   "raw_sha256": "33496a305f7a4b933784fb5aec95f920fbc3d4687794817e4cc444aa6578d2e4",
+   "body_sha256": "6a911ac55be9492767c4c9e0c0066cbcd0361f20908c08a53a0ae31fdbfd36ba",
+   "body_bytes": 283427,
+   "url": "https://www.gutenberg.org/ebooks/1232"
+  },
+  {
+   "id": "3207",
+   "title": "Leviathan",
+   "author": "Thomas Hobbes",
+   "language": "en",
+   "raw_sha256": "3de1e492641d939567a8b0de827fb13e1ad992324f9ac8b204f60475009b7294",
+   "body_sha256": "57d3dfacc5790f960c0d978c57610e46124ad89fd255cd22eb13d7891c04b2a1",
+   "body_bytes": 1212567,
+   "url": "https://www.gutenberg.org/ebooks/3207"
+  },
+  {
+   "id": "4300",
+   "title": "Ulysses",
+   "author": "James Joyce",
+   "language": "en",
+   "raw_sha256": "e03094626f9528cf3fc287a49d6edbdbf47cd40483cb13ceb301e74e15ebbf9e",
+   "body_sha256": "128e8e078f4c183fbeb06447fe0458a2a75986bd834d2abb65086c92857d3598",
+   "body_bytes": 1533771,
+   "url": "https://www.gutenberg.org/ebooks/4300"
+  },
+  {
+   "id": "205",
+   "title": "Walden, and On The Duty Of Civil Disobedience",
+   "author": "Henry David Thoreau",
+   "language": "en",
+   "raw_sha256": "2d9a76a2e3e8195c69430516ebd33c4d0757a53ad432ff6186b7b794e6fe99f9",
+   "body_sha256": "3a9ab6d1e0b079810f52a6c0eab7f0a16da467c16258873d8c3a5069ab35431f",
+   "body_bytes": 637839,
+   "url": "https://www.gutenberg.org/ebooks/205"
+  },
+  {
+   "id": "215",
+   "title": "The call of the wild",
+   "author": "Jack London",
+   "language": "en",
+   "raw_sha256": "30f569c5671bba7bbc4a92ab6d8ee01a0d3be00f994819c77da62c28041eb8a2",
+   "body_sha256": "25b3ba403ccc142ca55530e307cd40455f5843d49b929781fe5360487ff56daf",
+   "body_bytes": 176876,
+   "url": "https://www.gutenberg.org/ebooks/215"
+  },
+  {
+   "id": "1184",
+   "title": "The Count of Monte Cristo",
+   "author": "Alexandre Dumas",
+   "language": "en",
+   "raw_sha256": "99245b8f3f6b637a3670d37305bb1ba52003f05797b6638571562999fd623f9c",
+   "body_sha256": "89dcf507296efb1149bcab9128c2ca90a010ecd17162665277005e914efddb92",
+   "body_bytes": 2704314,
+   "url": "https://www.gutenberg.org/ebooks/1184"
+  },
+  {
+   "id": "514",
+   "title": "Little Women",
+   "author": "Louisa May Alcott",
+   "language": "en",
+   "raw_sha256": "36831477b339dbcd7e7206119d77e9e58b9727ef3c299d1a1dc4446e1db97850",
+   "body_sha256": "0e5ac7a490b1bba1a58460462e472ae09dfc6600bc9499333b5b82a52df4e8ed",
+   "body_bytes": 1030872,
+   "url": "https://www.gutenberg.org/ebooks/514"
+  },
+  {
+   "id": "35",
+   "title": "The Time Machine",
+   "author": "H. G. Wells",
+   "language": "en",
+   "raw_sha256": "2892e919000e17c83e1dac51b30f4675db50536b644d7579fe8a89bb399a9bdc",
+   "body_sha256": "82978e620779bcdc87eb246db4e8ff0814c462e5858ecdaf60deeeaf4d1ee3ea",
+   "body_bytes": 181476,
+   "url": "https://www.gutenberg.org/ebooks/35"
+  },
+  {
+   "id": "43",
+   "title": "The strange case of Dr. Jekyll and Mr. Hyde",
+   "author": "Robert Louis Stevenson",
+   "language": "en",
+   "raw_sha256": "b43448a88391591f9cf82b25553df00faf47a2752a873185fcdd1156eebdb990",
+   "body_sha256": "fd142dcda0699e028fb65c14310d5bab84e4427fdddd596109e45473cb1f6c3a",
+   "body_bytes": 141075,
+   "url": "https://www.gutenberg.org/ebooks/43"
+  },
+  {
+   "id": "2814",
+   "title": "Dubliners",
+   "author": "James Joyce",
+   "language": "en",
+   "raw_sha256": "6be7d8400ac2549459307d1c1a20a25c86a736984269d3e9d989c817814be60c",
+   "body_sha256": "f0558686830b59e78f99343bcb2832c73fae9fb6d5885b693214bfc0f61705f1",
+   "body_bytes": 378037,
+   "url": "https://www.gutenberg.org/ebooks/2814"
+  },
+  {
+   "id": "1497",
+   "title": "The Republic",
+   "author": "Plato",
+   "language": "en",
+   "raw_sha256": "3d2e397122881d7737a48fb80e71cddf4c78cda54ceac7e0905fe945dfab48fd",
+   "body_sha256": "ac053c1bf2d459aa437b6a335730320c8b5b5523f84c149fdfd19a4089f357e6",
+   "body_bytes": 1199841,
+   "url": "https://www.gutenberg.org/ebooks/1497"
+  },
+  {
+   "id": "135",
+   "title": "Les Misérables",
+   "author": "Victor Hugo",
+   "language": "en",
+   "raw_sha256": "6cf3b9d6fc5e6f733737425267d3af296d7f99f9b9fd1d255a3ab7689a6346ab",
+   "body_sha256": "90fe05667b582a89f570ee047f572afe4c7d86bd2cde23e64f397a7622414eae",
+   "body_bytes": 3276196,
+   "url": "https://www.gutenberg.org/ebooks/135"
+  },
+  {
+   "id": "17135",
+   "title": "Twas the Night before Christmas: A Visit from St. Nicholas",
+   "author": "Clement Clarke Moore",
+   "language": "en",
+   "raw_sha256": "15ae8332b7c9b8a0b3fe1784221ef8ebc716e3f1089b47d22433da6d7a1c73c7",
+   "body_sha256": "fc52b0b04dc418f579259fe67e29356b49f2655c6e2cce84ca319883dab8e241",
+   "body_bytes": 6358,
+   "url": "https://www.gutenberg.org/ebooks/17135"
+  },
+  {
+   "id": "13951",
+   "title": "Les trois mousquetaires",
+   "author": "Alexandre Dumas",
+   "language": "fr",
+   "raw_sha256": "46c01913219e6ff165256b8cbcaec7034b004f785a147341911b3caee70ccfcc",
+   "body_sha256": "f2ae4ecd92e263b1f8337e50ce1002fe5edc6e0abb8896c9b17a22185f4cc3e2",
+   "body_bytes": 1398458,
+   "url": "https://www.gutenberg.org/ebooks/13951"
+  },
+  {
+   "id": "15532",
+   "title": "Novelas Cortas",
+   "author": "Pedro Antonio de Alarcón",
+   "language": "es",
+   "raw_sha256": "f572897e57db5ad28e1a6f5df5b1a36b1efd8a0f258b75f1c009f6ebababf2a9",
+   "body_sha256": "2556fba361049a534401356761179af908e23272eb10c309c3dd03d5e8277aa2",
+   "body_bytes": 442120,
+   "url": "https://www.gutenberg.org/ebooks/15532"
+  },
+  {
+   "id": "7849",
+   "title": "The Trial",
+   "author": "Franz Kafka",
+   "language": "en",
+   "raw_sha256": "31351cb91dc50deb9bc3fb527b24b1352d4f9743a95f8d1a38bdfe0a9ec6b42f",
+   "body_sha256": "9d279d9ccab0e0578cb9b33b85e42964d960c56092dc40c25e462b1d40898063",
+   "body_bytes": 449848,
+   "url": "https://www.gutenberg.org/ebooks/7849"
+  },
+  {
+   "id": "2413",
+   "title": "Madame Bovary",
+   "author": "Gustave Flaubert",
+   "language": "en",
+   "raw_sha256": "9692881a32f5e37772d373770c4eeda121e9018a4a09fd228839b0179754ac47",
+   "body_sha256": "9a2984bdbb66447e8240c11533cbf8a8ad7e9104da2744b51a77cc17ce0124b2",
+   "body_bytes": 661674,
+   "url": "https://www.gutenberg.org/ebooks/2413"
+  },
+  {
+   "id": "6130",
+   "title": "The Iliad",
+   "author": "Homer",
+   "language": "en",
+   "raw_sha256": "ca4f23115b384b0219427ef208e875f0351820b8f80f28259272997ea581c36b",
+   "body_sha256": "2f58315a5dab203b824bc62d5393a9bee7d65d66c208e46849673df24b750c2a",
+   "body_bytes": 1115826,
+   "url": "https://www.gutenberg.org/ebooks/6130"
+  },
+  {
+   "id": "3600",
+   "title": "Essays of Michel de Montaigne — Complete",
+   "author": "Michel de Montaigne",
+   "language": "en",
+   "raw_sha256": "1b4c87312f0890e04cecee48e3a5fa263de65743230b819e16cb1bd72f7aee59",
+   "body_sha256": "7a2649798607a164030beab9f3051135342116958ee290f89910aa70848eb9ed",
+   "body_bytes": 3033552,
+   "url": "https://www.gutenberg.org/ebooks/3600"
+  },
+  {
+   "id": "1727",
+   "title": "The Odyssey",
+   "author": "Homer",
+   "language": "en",
+   "raw_sha256": "ffbdb29c3dda284b65c11243db1a98167826a70c81bca2ed4b6232f86c905fb9",
+   "body_sha256": "b0ee7c641021ef7b3a251c7bd828e74d938385ba1f4991eb0986db0bd5a5220c",
+   "body_bytes": 686141,
+   "url": "https://www.gutenberg.org/ebooks/1727"
+  },
+  {
+   "id": "2554",
+   "title": "Crime and Punishment",
+   "author": "Fyodor Dostoyevsky",
+   "language": "en",
+   "raw_sha256": "4a84a709a6e355f5fa555c7276c8a90125eb9d06f63bc8663410c3d1297eb688",
+   "body_sha256": "eb8d1bb578a8c3aeb008ccd02d69367c6b6917a4a5740f908774397c6fb8a902",
+   "body_bytes": 1160566,
+   "url": "https://www.gutenberg.org/ebooks/2554"
+  },
+  {
+   "id": "28054",
+   "title": "The Brothers Karamazov",
+   "author": "Fyodor Dostoyevsky",
+   "language": "en",
+   "raw_sha256": "2e75c187cb750df3f7c910fa90970b264b9a4fee212be2a73c6bb507d9ad22fe",
+   "body_sha256": "823d52007770d1a426d86e7f9b463519789feaaff9698de284e9cfd6b44881f6",
+   "body_bytes": 1982080,
+   "url": "https://www.gutenberg.org/ebooks/28054"
+  }
+ ],
+ "corpus_bytes": 39363235,
+ "corpus_sha256": "3cdea9c7ef44b50646a1b956ed22e7f798249fa540a13ddef2a6644178881bd0",
+ "token_profiles": {
+  "qwen3.8-flash-next": {
+   "tokenizer": "Qwen/Qwen3.8-Flash-Next tokenizer.json @ de4b8e4d43b917e7706784d8bb445c9af86a3540",
+   "head": [
+    248045,
+    846,
+    198,
+    4274,
+    279,
+    2614,
+    4281,
+    314,
+    6265,
+    15060,
+    13,
+    271
+   ],
+   "foot": [
+    271,
+    7734,
+    264,
+    2716,
+    8627,
+    25456,
+    279,
+    1822,
+    5587,
+    314,
+    1439,
+    6265,
+    13,
+    248046,
+    198,
+    248045,
+    74455,
+    198
+   ],
+   "book_tokens": [
+    174832,
+    99077,
+    140443,
+    311745,
+    190171,
+    37946,
+    7997,
+    216347,
+    107734,
+    156423,
+    259900,
+    166119,
+    216714,
+    255780,
+    41371,
+    65324,
+    95711,
+    52724,
+    81502,
+    27862,
+    608486,
+    59280,
+    192211,
+    59596,
+    187234,
+    111806,
+    134480,
+    4585,
+    67724,
+    309569,
+    401680,
+    154607,
+    43134,
+    664164,
+    254771,
+    43406,
+    34874,
+    92554,
+    284316,
+    817464,
+    1685,
+    390380,
+    144446,
+    109193,
+    163045,
+    293049,
+    744207,
+    175989,
+    289866,
+    497115
+   ],
+   "total_tokens": 10040638,
+   "prompts": {
+    "262144": {
+     "sha256": "6f614817a19642f0386bc28d9e86425c30fd5e1f4565eea22cf4c02788e6b7f1",
+     "distinct_ids": 23857
+    },
+    "393216": {
+     "sha256": "dcba8b5d4fafac759ac5f87e3af10687bfb993c2889783f0030e4f772d4f31b1",
+     "distinct_ids": 27948
+    },
+    "524032": {
+     "sha256": "ef5389582b7ac7695879128e226c646e199e1eac71f8ea6f6f597fe3df3f3b11",
+     "distinct_ids": 30844
+    },
+    "1048320": {
+     "sha256": "57ea5269f2d07e0bcb73c9cddfa8a6723d2900599b95d0e430fe9eab15a03232",
+     "distinct_ids": 38121
+    }
+   }
+  }
+ }
+}

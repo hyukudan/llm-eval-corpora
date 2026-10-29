@@ -1,0 +1,322 @@
+{
+  "authored": {
+    "content_sha256": "60ce946ab5155b2ac8754d6705e224e80e7118f14b655671bd0989e92397da48",
+    "count": 2377,
+    "families": {
+      "classify": 1644,
+      "entail": 198,
+      "grade": 150,
+      "next_tool": 196,
+      "route": 189
+    },
+    "family_lang": {
+      "classify/ca": 5,
+      "classify/de": 15,
+      "classify/en": 324,
+      "classify/es": 964,
+      "classify/fr": 15,
+      "classify/it": 10,
+      "classify/pt": 311,
+      "entail/ca": 5,
+      "entail/de": 16,
+      "entail/en": 22,
+      "entail/es": 119,
+      "entail/fr": 15,
+      "entail/it": 11,
+      "entail/pt": 10,
+      "grade/ca": 5,
+      "grade/de": 16,
+      "grade/en": 27,
+      "grade/es": 71,
+      "grade/fr": 11,
+      "grade/it": 10,
+      "grade/pt": 10,
+      "next_tool/ca": 5,
+      "next_tool/de": 15,
+      "next_tool/en": 24,
+      "next_tool/es": 118,
+      "next_tool/fr": 14,
+      "next_tool/it": 11,
+      "next_tool/pt": 9,
+      "route/ca": 5,
+      "route/de": 18,
+      "route/en": 39,
+      "route/es": 88,
+      "route/fr": 18,
+      "route/it": 11,
+      "route/pt": 10
+    },
+    "file": "data/authored-v1.jsonl",
+    "file_sha256": "60ce946ab5155b2ac8754d6705e224e80e7118f14b655671bd0989e92397da48",
+    "generators": {
+      "writer-luna": 2377
+    },
+    "label_provenance": {
+      "teacher_agreed": 338,
+      "teacher_single": 2039
+    },
+    "langs": {
+      "ca": 25,
+      "de": 80,
+      "en": 436,
+      "es": 1360,
+      "fr": 73,
+      "it": 53,
+      "pt": 350
+    },
+    "licence": "CC-BY-4.0",
+    "splits": {
+      "calibration": {
+        "content_sha256": "53800823218363cdfd3606f7a36dc62654e7c0b5de5b70c907d99473fc597d4a",
+        "count": 214
+      },
+      "dev": {
+        "content_sha256": "04bdc150bd3ffc4110b09f34df69adf8c086f04cb67d388ceded20fb77119032",
+        "count": 250
+      },
+      "test": {
+        "content_sha256": "fa38adb19a7c74551c763467ce5fc8f9f49b247ae3cdc4af329a2119dd88a7f7",
+        "count": 258
+      },
+      "train": {
+        "content_sha256": "e035b0edf3e295114e330aeb6e12ea5543aafbe9bcb0256cdb09f1bb359b2143",
+        "count": 1655
+      }
+    },
+    "teacher_models": [
+      "gpt-6-luna",
+      "gpt-6.1-sol"
+    ],
+    "unlabelled_count": 16,
+    "unlabelled_file": "data/authored-v1-unlabelled.jsonl",
+    "unlabelled_sha256": "5af5603c3a9c45e4317b606bc3ee0e3dbe832fa9b74f42bc2c394fc8b2053c72",
+    "writer_model": "gpt-6-luna"
+  },
+  "public": {
+    "massive": {
+      "converter_version": "decision-public-v1",
+      "licence": "CC-BY-4.0",
+      "licence_checked_at": "https://github.com/alexa/massive (LICENSE, NOTICE.md)",
+      "locales": [
+        "en-US",
+        "es-ES",
+        "fr-FR",
+        "de-DE",
+        "it-IT",
+        "pt-PT",
+        "ca-ES"
+      ],
+      "output": {
+        "content_sha256": "3d7a5e3577c6ae19c73a669e498b73fcf5c705cb71aa3941588e3a49d52dedfd",
+        "count": 101031,
+        "dropped_duplicates": 3668,
+        "families": {
+          "classify": 101031
+        },
+        "family_lang": {
+          "classify/ca": 14280,
+          "classify/de": 14593,
+          "classify/en": 14883,
+          "classify/es": 14432,
+          "classify/fr": 14450,
+          "classify/it": 14090,
+          "classify/pt": 14303
+        },
+        "generators": {
+          "massive": 101031
+        },
+        "langs": {
+          "ca": 14280,
+          "de": 14593,
+          "en": 14883,
+          "es": 14432,
+          "fr": 14450,
+          "it": 14090,
+          "pt": 14303
+        },
+        "skipped_over_limits": 10948,
+        "splits": {
+          "calibration": {
+            "content_sha256": "0ae09d0a90f06db32b0a8433b4e32a53908425035ef40038609c32225506a031",
+            "count": 6832
+          },
+          "dev": {
+            "content_sha256": "b1f00676d06d4c46f1f8ef7ed59104d058281726d958b84ab1fa686f95b0ea9f",
+            "count": 7375
+          },
+          "external_dev": {
+            "content_sha256": "c28118866090106d0b128599ea41f2a0b1f374296d252a28603d46368436b36c",
+            "count": 12325
+          },
+          "external_test": {
+            "content_sha256": "521786f612a7cfdf070aa2907a49de2feaf699f2de5b7481ff15fb1a04ce9195",
+            "count": 18236
+          },
+          "test": {
+            "content_sha256": "24890859d98db11ac8ac22e00ddd31e31c64cec7ef1a02597921e7b1bf2dca8f",
+            "count": 6897
+          },
+          "train": {
+            "content_sha256": "6c6b82576a8b932642da141831b816462b52cffb44b046b18cd4b701f755e3f6",
+            "count": 49366
+          }
+        }
+      },
+      "upstream": [
+        {
+          "file": "amazon-massive-dataset-1.1.tar.gz",
+          "sha256": "4cba5faa11c71437928e17cb1b9b3d8b8e727e7ea363a3a9a8045e19c0491577",
+          "url": "https://amazon-massive-nlu-dataset.s3.amazonaws.com/amazon-massive-dataset-1.1.tar.gz"
+        }
+      ]
+    },
+    "when2call": {
+      "converter_version": "decision-public-v1",
+      "licence": "CC-BY-4.0",
+      "licence_checked_at": "https://huggingface.co/datasets/nvidia/When2Call (dataset card, licence: cc-by-4.0)",
+      "output": {
+        "content_sha256": "0dc7a0e08225e0e6b12665fc91bd6e909c2e3551bf5edc510ef5cddc312def68",
+        "count": 12575,
+        "dropped_duplicates": 1,
+        "families": {
+          "next_tool": 12575
+        },
+        "family_lang": {
+          "next_tool/en": 12575
+        },
+        "generators": {
+          "when2call": 12575
+        },
+        "langs": {
+          "en": 12575
+        },
+        "skipped_over_limits": 76,
+        "splits": {
+          "calibration": {
+            "content_sha256": "a21f0778b47858c969d1611e6f38f96d6a27e086a37e93a8b01cbc186b885ec4",
+            "count": 879
+          },
+          "dev": {
+            "content_sha256": "4a722972a83f33aade292a3ca152deec4311b358a5761973262fab7610e2832d",
+            "count": 889
+          },
+          "external_test": {
+            "content_sha256": "43479e60f052caadf05e08c4d36d68c2587a3a4f5a200ec62bac64bc40cad5c8",
+            "count": 3621
+          },
+          "test": {
+            "content_sha256": "120ab9e8d38a9c9f628a43fe94e1b503e4d26bb907ba768465ca5867c3b00dee",
+            "count": 915
+          },
+          "train": {
+            "content_sha256": "b2d0f61543bc436506bea0ca74b2b6c9535e3db16d9880266d27c8361ca99345",
+            "count": 6271
+          }
+        }
+      },
+      "upstream": [
+        {
+          "file": "when2call_train_pref.jsonl",
+          "sha256": "d90637f108fabf1b097493c5818c3692e1d73140259d2f8e490536255e765bc4",
+          "url": "https://huggingface.co/datasets/nvidia/When2Call/resolve/0582f7749df63a96fdc3070932e83e72396ace53/train/when2call_train_pref.jsonl"
+        },
+        {
+          "file": "when2call_test_mcq.jsonl",
+          "sha256": "8c3694e583eeeb8dbc297e6cd90da70efc68efa4b6adb7227523e828c6b7b14c",
+          "url": "https://huggingface.co/datasets/nvidia/When2Call/resolve/0582f7749df63a96fdc3070932e83e72396ace53/test/when2call_test_mcq.jsonl"
+        }
+      ]
+    }
+  },
+  "schema": "llm-eval-corpora/decision-manifest-v1",
+  "split_rule": {
+    "bounds": [
+      70,
+      80,
+      90
+    ],
+    "bucket": "int.from_bytes(sha256(canonical_json([rule_id, salt, group]))[:8], 'big') % 100",
+    "rule_id": "decision-split-v1",
+    "salt": "llm-eval-corpora/decision/v1"
+  },
+  "synthetic": {
+    "content_sha256": "5eaffeed930f8d5e7abd0bebe56ea0474942a23dea2366afaa17aa9a335af24a",
+    "count": 5499,
+    "families": {
+      "classify": 1500,
+      "completion": 1500,
+      "effort": 855,
+      "entail": 750,
+      "grade": 78,
+      "next_tool": 672,
+      "review_need": 144
+    },
+    "family_lang": {
+      "classify/en": 500,
+      "classify/es": 500,
+      "classify/fr": 500,
+      "completion/en": 500,
+      "completion/es": 500,
+      "completion/fr": 500,
+      "effort/en": 285,
+      "effort/es": 285,
+      "effort/fr": 285,
+      "entail/en": 250,
+      "entail/es": 250,
+      "entail/fr": 250,
+      "grade/en": 26,
+      "grade/es": 26,
+      "grade/fr": 26,
+      "next_tool/en": 224,
+      "next_tool/es": 224,
+      "next_tool/fr": 224,
+      "review_need/en": 48,
+      "review_need/es": 48,
+      "review_need/fr": 48
+    },
+    "file": "data/synthetic-v1.jsonl",
+    "file_sha256": "5eaffeed930f8d5e7abd0bebe56ea0474942a23dea2366afaa17aa9a335af24a",
+    "generator_version": "decision-synth-v1",
+    "generators": {
+      "budget-gate": 105,
+      "claim-review": 144,
+      "deadline": 750,
+      "entailment": 750,
+      "ready-receipt": 1500,
+      "severity-score": 78,
+      "tool-select": 672,
+      "topic-route": 1500
+    },
+    "langs": {
+      "en": 1833,
+      "es": 1833,
+      "fr": 1833
+    },
+    "languages": [
+      "en",
+      "es",
+      "fr"
+    ],
+    "licence": "CC-BY-4.0",
+    "scenarios": 6000,
+    "seed": 20261029,
+    "splits": {
+      "calibration": {
+        "content_sha256": "6ce79c04b9420de8936ce41055458e4d2e4e2c206dd2e4bb9c30b407dbc1c12c",
+        "count": 549
+      },
+      "dev": {
+        "content_sha256": "c0a42d20841f552be2b336dcbd75509dbf9c564c2f2b824cc6d600df36e05071",
+        "count": 596
+      },
+      "test": {
+        "content_sha256": "055ae97fc488f5225c7bada0a8254cefdee62fc24c6e69f906de31427c76b2d3",
+        "count": 538
+      },
+      "train": {
+        "content_sha256": "9434dc2dd797c006ac54f7b9b11ac8135d2017fe43a47d7f7d7af8f102ad0ad9",
+        "count": 3816
+      }
+    }
+  }
+}
