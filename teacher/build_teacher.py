@@ -13,10 +13,12 @@ checked against the frozen sha256 of the source row, then the rebuilt item is ch
 Usage: python build_teacher.py --out OUT.jsonl [--cache DIR] [--offline]
 Standard library only.
 """
-import argparse, hashlib, json, os, sys, time, urllib.parse, urllib.request
+import argparse, hashlib, json, os, sys, urllib.parse
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import netfetch  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-UA = {"User-Agent": "llm-eval-corpora/1.0 (corpus rebuild; python-urllib)"}
 ROWS = "https://datasets-server.huggingface.co/rows?"
 
 
@@ -34,20 +36,7 @@ def get_row(dataset, config, split, idx, cache, offline):
         if offline:
             raise SystemExit("missing in cache: " + path)
         url = ROWS + urllib.parse.urlencode(dict(dataset=dataset, config=config, split=split, offset=idx, length=1))
-        for k in range(6):
-            try:
-                with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
-                    data = r.read()
-                json.loads(data)["rows"][0]
-                with open(path, "wb") as f:
-                    f.write(data)
-                time.sleep(1)
-                break
-            except Exception as e:
-                print("retry", k, url, e, file=sys.stderr)
-                time.sleep(5 * (k + 1))
-        else:
-            raise SystemExit("fetch failed: " + url)
+        netfetch.download(url, path, check=lambda t: json.load(open(t, encoding="utf-8"))["rows"][0])
     rows = json.load(open(path, encoding="utf-8"))["rows"]
     assert rows[0]["row_idx"] == idx, (path, rows[0]["row_idx"])
     return rows[0]["row"]

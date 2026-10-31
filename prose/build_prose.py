@@ -25,10 +25,12 @@ Usage: python build_prose.py --out OUT [--cache DIR] [--profile qwen3.8-flash-ne
 includes Gutenberg #30254 (an explicit Victorian novel); the default set replaces it by #514 (Little Women).
 Needs Python 3.9+; token modes also need `pip install tokenizers`.
 """
-import argparse, hashlib, json, os, sys, time, urllib.request
+import argparse, hashlib, json, os, sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import netfetch  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-UA = {"User-Agent": "llm-eval-corpora/1.0 (prose rebuild; python-urllib)"}
 URL = "https://www.gutenberg.org/cache/epub/{id}/pg{id}.txt"
 PROFILES = {
     "qwen3.8-flash-next": {
@@ -46,22 +48,10 @@ def sha(b):
     return hashlib.sha256(b).hexdigest()
 
 
-def fetch(url, path, tries=6):
-    if os.path.exists(path) and os.path.getsize(path) > 0:
-        return open(path, "rb").read()
-    for k in range(tries):
-        try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
-                data = r.read()
-            with open(path + ".tmp", "wb") as f:
-                f.write(data)
-            os.replace(path + ".tmp", path)
-            time.sleep(1)  # be polite to the mirror
-            return data
-        except Exception as e:
-            print("retry", k, url, e, file=sys.stderr)
-            time.sleep(5 * (k + 1))
-    raise SystemExit("download failed: " + url)
+def fetch(url, path):
+    if not (os.path.exists(path) and os.path.getsize(path) > 0):
+        netfetch.download(url, path)
+    return open(path, "rb").read()
 
 
 def strip_gutenberg(raw):

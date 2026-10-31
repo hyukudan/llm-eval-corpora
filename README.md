@@ -38,12 +38,20 @@ unpublished while it is still used as an unseen holdout; it will be added with a
 
 ```sh
 make verify-quick        # seconds, offline: regenerate the synthetic decision set
-make verify              # download and rebuild prose, quality corpus and holdouts (~0.2 GB, ~30 min cold)
+make verify              # download and rebuild prose, quality corpus and holdouts (~0.2 GB, ~1 h cold, rate-limited)
 make verify-full         # + token-ID prompts (pip install tokenizers) and the MASSIVE / When2Call conversions
 ```
 
 Python 3.9+ and the standard library are enough, except for token-ID prompts (`tokenizers`). Outputs and the
 download cache go to `./work/` (ignored by git); a second run reuses the cache. Nothing needs a GPU.
+
+**Downloads are rate-limited on purpose.** The holdout and quality sets read a few hundred pages from the
+Hugging Face rows API. All scripts share one downloader ([netfetch.py](netfetch.py)): at most one rows-API
+request every 5 s (`CORPORA_HF_ROWS_GAP`), one request per second to other hosts (`CORPORA_MIN_GAP`), and on
+HTTP 429 or 5xx it waits for the server's `Retry-After` (or backs off exponentially) and slows down for the rest
+of the run. Anonymous Hugging Face requests have the lowest limit; if you have a free account, set `HF_TOKEN`
+(or run `huggingface-cli login`) and the token is sent to huggingface.co only. If a run still stops, rerun the
+same command: files already in the cache are not downloaded again.
 
 ## Determinism
 
@@ -119,6 +127,11 @@ y casos de decisión (sintéticos propios en inglés, español y francés, y con
 No depende de ningún modelo, motor ni hardware. Cada conjunto tiene un manifiesto con el origen exacto y el
 sha256 de cada elemento, y un script que lo reconstruye byte a byte desde la fuente original:
 `make verify` (o `python verify.py`) lo reconstruye todo y comprueba los hashes.
+
+Las descargas van limitadas a propósito para no saturar Hugging Face: como máximo una petición cada 5 s a su
+API de filas, y ante un HTTP 429 se respeta `Retry-After` y se va más despacio el resto de la ejecución. Con una
+cuenta gratuita, define `HF_TOKEN` (o `huggingface-cli login`) para tener un límite más alto. Si una ejecución se
+corta, repite el mismo comando: lo ya descargado queda en la caché.
 
 Licencias: el código es MIT; nuestros datos sintéticos y manifiestos, CC BY 4.0; los datos de terceros
 mantienen su licencia original (Wikipedia y Dolly, CC BY-SA con atribución y compartir-igual; oasst2 y Aya,

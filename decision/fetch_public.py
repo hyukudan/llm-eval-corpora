@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import argparse
 import sys
-import urllib.request
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import netfetch  # noqa: E402
 
 from splits import file_sha256
 
@@ -55,17 +57,14 @@ def fetch(cache: Path, source: str) -> list[Path]:
             print(f"ok (cached) {target}")
             paths.append(target)
             continue
-        partial = target.with_name(target.name + ".partial")
         print(f"downloading {url}")
-        request = urllib.request.Request(url, headers={"User-Agent": "decision-fetch/1"})
-        with urllib.request.urlopen(request, timeout=120) as response, open(partial, "wb") as out:
-            for chunk in iter(lambda: response.read(1 << 20), b""):
-                out.write(chunk)
-        actual = file_sha256(partial)
-        if actual != expected:
-            partial.unlink()
-            raise SystemExit(f"sha256 mismatch for {name}: expected {expected}, got {actual}")
-        partial.replace(target)
+
+        def check(tmp: str) -> None:
+            actual = file_sha256(Path(tmp))
+            if actual != expected:
+                raise SystemExit(f"sha256 mismatch for {name}: expected {expected}, got {actual}")
+
+        netfetch.download(url, str(target), check=check)
         print(f"ok {target}")
         paths.append(target)
     return paths

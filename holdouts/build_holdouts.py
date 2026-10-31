@@ -16,10 +16,12 @@ and each item names its origin, its upstream location and the sha256 of its byte
 Usage: python build_holdouts.py --out OUT [--cache DIR] [--sets short-v3,long-v3,ho2,ho3b] [--offline]
 Writes OUT/<set>/items/<source_id>.{txt,json} and OUT/<set>/sources.jsonl. Standard library only.
 """
-import argparse, gzip, hashlib, io, json, os, sys, tarfile, time, urllib.parse, urllib.request, zipfile
+import argparse, gzip, hashlib, io, json, os, sys, tarfile, urllib.parse, zipfile
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import netfetch  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-UA = {"User-Agent": "llm-eval-corpora/1.0 (corpus rebuild; python-urllib)"}
 ROWS = "https://datasets-server.huggingface.co/rows?"
 WIKI = ("wikimedia/wikipedia", "b04c8d1ceb2f5cd4588862100d08de323dccfbaa")
 DOLLY = ("argilla/databricks-dolly-15k-curated-multilingual", "5f466e5af11fb82ea610acc5cf983dcb3a025840")
@@ -44,21 +46,8 @@ def download(url, path, offline):
         return path
     if offline:
         raise SystemExit("missing in cache: " + path)
-    for k in range(8):
-        try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=120) as r:
-                data = r.read()
-            if url.startswith(ROWS):
-                json.loads(data)["rows"]
-            with open(path + ".tmp", "wb") as f:
-                f.write(data)
-            os.replace(path + ".tmp", path)
-            time.sleep(2 if url.startswith(ROWS) else 0)  # rate-limit the rows API
-            return path
-        except Exception as e:
-            print("retry", k, url, e, file=sys.stderr)
-            time.sleep(min(120, 10 * (k + 1)))
-    raise SystemExit("download failed: " + url)
+    check = (lambda t: json.load(open(t, encoding="utf-8"))["rows"]) if url.startswith(ROWS) else None
+    return netfetch.download(url, path, check=check)
 
 
 class Sources:
