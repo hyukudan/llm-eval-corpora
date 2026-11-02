@@ -22,8 +22,10 @@ the Python standard library (3.10 or newer).
 | `splits.py` | Split rule, record validation, integrity checks, canonical JSON. |
 | `convert_public.py` | `massive` / `when2call` converters (`--input FILES --out FILE.jsonl`). |
 | `fetch_public.py` | Downloads the upstream files to a cache directory and checks their sha256. |
-| `freeze.py` | Writes `data/synthetic-v1.jsonl` and `manifest.json`. |
+| `robustness.py` | Label-preserving perturbations of test records (`data/robustness-v1.jsonl`, see below). |
+| `freeze.py` | Writes `data/synthetic-v1.jsonl`, `data/robustness-v1.jsonl` and `manifest.json`. |
 | `verify.py` | Regenerates and checks everything against `manifest.json`. |
+| `test_decision.py` | Self-checks for the split rule and the robustness set (`python -m unittest discover -s decision -p "test_*.py"`). |
 | `writer-prompts/` | Prompt templates for collecting extra cases written by a language model (see below). |
 
 ## Synthetic generators
@@ -86,8 +88,27 @@ replies to one When2Call conversation. Records from an upstream evaluation
 partition are not hashed. They are labelled `external_dev` or `external_test`
 and must never be used for training.
 
+**Time blocks** (`decision-split-v1-timeblock`). A record may carry an optional
+`meta.time_block`, `"YYYY-MM-DD"` or `"YYYY-MM"` (a real calendar date; any
+other form is refused). Records without one follow the rule above unchanged,
+so no existing assignment moves. For a record with one, the split unit is
+the pair (family, time block):
+
+```
+bucket = int.from_bytes(sha256(canonical_json(["decision-split-v1-timeblock", "llm-eval-corpora/decision/v1", family, time_block]))[:8], "big") % 100
+```
+
+with the same 70/80/90 bounds. A whole time block of one family therefore
+lands in one split (nothing leaks across time within a family), and families
+are split independently. All records of one `group` must still share one
+unit: a group whose records carry different families or time blocks, or mix
+records with and without a time block, is refused. `assign_split(group,
+family=None, time_block=None)` implements both rules; the old one-argument
+call is unchanged. `Checker.summary()` also returns `family_splits`
+(`{family: {split: count}}`), an audit that the manifest does not store.
+
 `Checker` in `splits.py` refuses a duplicate id, a split that does not follow
-the rule, a `parent` that is missing or sits in another group or split, and
+the rule, a group that straddles split units, a `parent` that is missing or sits in another group or split, and
 any content (see SCHEMA.md) that appears in two splits. The converters also
 drop a record whose content repeats an earlier one, keep the first copy and
 count the drops.
@@ -195,6 +216,44 @@ when you use them:
 }
 ```
 
+## Robustness set
+
+`data/robustness-v1.jsonl` (`decision-robustness-v1`, built by `robustness.py`, CC BY 4.0) holds
+label-preserving perturbations of **test** records only: the synthetic test split and the authored test
+records with `meta.label.provenance == "teacher_agreed"`. Each source yields, in this order:
+
+| Perturbation | Change | Applies to | Records |
+|---|---|---|---|
+| `option_reverse` | option list reversed | `choice` | 403 |
+| `neutral_ids` | option ids renamed `opt-1`..`opt-n` in list order; `answer` and `insufficient_option` remapped | `choice` | 403 |
+| `distractor_evidence` | one irrelevant `confirmed` evidence item (a neutral fact about office upkeep or distant weather) with a fresh ref, picked by a salted sha256 of the record id from a fixed pool per language | all, unless 64 items already | 572 |
+| `evidence_reverse` | evidence list reversed | synthetic, at least 2 items | 351 |
+
+Total 1,729 records (1,641 from 538 synthetic sources, 88 from 34 authored sources). Yes/no and
+score records keep their option order and ids, because the schema fixes them. A perturbed record has id
+`<source id>~<perturbation>`, the source's group, family, kind and language, split `test`,
+`parent` = the source id, and `meta` = `{"perturbation", "source_id", "robustness_version",
+"source_meta"}`. The answer always names the option with the same text. The build refuses a
+perturbation that changes nothing, changes the answer, or has the content of any record outside the test
+split. Output order is source order, then perturbation order; the bytes are the same on any OS.
+`manifest.json` (`robustness`) records the file digest, counts and the digests of the test splits it was
+built from; `verify.py` rebuilds and compares it.
+
+Use: score a model on the source records and on each perturbation separately and report accuracy (and
+selective error, if the model may abstain) per perturbation next to the originals; the gap measures
+sensitivity to presentation. Pair records through `parent`. Never train on it: it is test data.
+
+Converted public records are not stored here. To perturb their test records:
+
+```
+python robustness.py --public OUT/massive.jsonl OUT/when2call.jsonl --out OUT/robustness-public.jsonl
+python freeze.py --robustness-public OUT/massive.jsonl OUT/when2call.jsonl --robustness-public-out OUT/robustness-public.jsonl
+python verify.py --robustness-public OUT/massive.jsonl OUT/when2call.jsonl
+```
+
+The output path must be outside `data/`. `freeze.py` records its digest under `robustness.public` only
+when it is built; evidence order is never perturbed for public records (it can be conversation turns).
+
 ## Writer prompt templates
 
 `writer-prompts/*.txt` are templates for asking a language model to write
@@ -240,8 +299,9 @@ CC BY 4.0, and use the same record schema with `generator: "writer-luna"`.
 
 ```
 python gen_synthetic.py --seed 20261029 --count 6000 --out /tmp/synthetic.jsonl   # same bytes as data/synthetic-v1.jsonl
-python freeze.py                                    # rewrite data/ and manifest.json (keeps recorded public digests)
+python freeze.py                                    # rewrite data/ and manifest.json (keeps recorded public digests and the authored entry)
 python fetch_public.py --cache CACHE
 python freeze.py --public CACHE --public-out OUT    # also convert and record the public digests
 python verify.py [--public CACHE]                   # exit status 1 on any mismatch
+python -m unittest discover -s decision -p "test_*.py"   # from the repository root
 ```

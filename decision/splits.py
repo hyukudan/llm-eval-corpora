@@ -15,6 +15,18 @@ group, so it always lands in the same split. Records taken from an upstream
 evaluation partition are never hashed: they keep ``external_dev`` or
 ``external_test`` and must not be used for training.
 
+Time blocks (``decision-split-v1-timeblock``): a record may carry an optional
+``meta.time_block`` ("YYYY-MM-DD" or "YYYY-MM"). Records without one follow
+``decision-split-v1`` unchanged. For a record with one, the split unit is
+(family, time block) and the bucket is
+
+    int.from_bytes(sha256(canonical_json([TIMEBLOCK_RULE_ID, SALT, family, time_block]))[:8], "big") % 100
+
+with the same bounds, so one family's whole time block lands in one split
+and families are split independently. A group whose records fall into
+different units (different families or time blocks, or a mix of records with
+and without a time block) is refused.
+
 Integrity (``Checker``): ids are unique; a record naming a ``parent`` must
 follow that parent and share its group and split; and the same content
 (ignoring id, option ids and option order) may never appear in two splits.
@@ -22,13 +34,17 @@ follow that parent and share its group and split; and the same content
 
 from __future__ import annotations
 
+import datetime
 import gzip
 import hashlib
 import io
 import json
+import re
 from collections import Counter
 
 RULE_ID = "decision-split-v1"
+TIMEBLOCK_RULE_ID = "decision-split-v1-timeblock"
+TIME_BLOCK_PATTERN = re.compile(r"[0-9]{4}-(0[1-9]|1[0-2])(-[0-9]{2})?")
 SALT = "llm-eval-corpora/decision/v1"
 BOUNDS = (70, 80, 90)  # cumulative percent: train | dev | calibration | test
 HASHED_SPLITS = ("train", "dev", "calibration", "test")
@@ -67,9 +83,34 @@ def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def assign_split(group: str) -> str:
-    """Hashed split of a group key (see module docstring)."""
-    bucket = int.from_bytes(hashlib.sha256(canonical([RULE_ID, SALT, group])).digest()[:8], "big") % 100
+def check_time_block(time_block) -> str:
+    """Return a valid time block ("YYYY-MM-DD" or "YYYY-MM", a real date) or raise RecordError."""
+    if type(time_block) is not str or not TIME_BLOCK_PATTERN.fullmatch(time_block):
+        raise RecordError("time_block_format")
+    if len(time_block) == 10:
+        try:
+            datetime.date.fromisoformat(time_block)
+        except ValueError:
+            raise RecordError("time_block_format") from None
+    return time_block
+
+
+def _bucket(key: list) -> int:
+    return int.from_bytes(hashlib.sha256(canonical(key)).digest()[:8], "big") % 100
+
+
+def assign_split(group: str, family: str | None = None, time_block: str | None = None) -> str:
+    """Hashed split of a group key, or of (family, time block) when a time block is given.
+
+    See the module docstring. Without a time block the family is ignored and
+    the result is exactly ``decision-split-v1``.
+    """
+    if time_block is None:
+        bucket = _bucket([RULE_ID, SALT, group])
+    else:
+        if family not in FAMILIES:
+            raise RecordError("time_block_family")
+        bucket = _bucket([TIMEBLOCK_RULE_ID, SALT, family, check_time_block(time_block)])
     low, middle, high = BOUNDS
     if bucket < low:
         return "train"
@@ -78,6 +119,20 @@ def assign_split(group: str) -> str:
     if bucket < high:
         return "calibration"
     return "test"
+
+
+def time_block_of(record: dict):
+    """The record's ``meta.time_block``, or None (also when meta is not an object)."""
+    meta = record.get("meta")
+    return meta.get("time_block") if isinstance(meta, dict) else None
+
+
+def split_unit(record: dict) -> tuple:
+    """What a record's split is hashed from: its group, or (family, time block)."""
+    time_block = time_block_of(record)
+    if time_block is None:
+        return (RULE_ID, record["group"])
+    return (TIMEBLOCK_RULE_ID, record["family"], check_time_block(time_block))
 
 
 def content_key(record: dict) -> str:
@@ -161,7 +216,8 @@ class Checker:
 
     Feed records in output order with ``add``; ``summary`` returns counts and
     sha256 digests (whole file and per split, each over the canonical JSONL
-    lines of that split in file order).
+    lines of that split in file order), plus a per-family split audit
+    (``family_splits``).
     """
 
     def __init__(self, sink=None):
@@ -175,13 +231,19 @@ class Checker:
         self.generators: Counter = Counter()
         self.ids: dict[str, tuple[str, str]] = {}  # id -> (group, split)
         self.content: dict[str, str] = {}  # content key -> split
+        self.units: dict[str, tuple] = {}  # group -> split unit
+        self.family_splits: Counter = Counter()  # (family, split) -> count
 
     def add(self, record: dict) -> None:
         validate(record)
         group, split = record["group"], record["split"]
         if record["id"] in self.ids:
             raise RecordError(f"duplicate id {record['id']}")
-        if split in HASHED_SPLITS and assign_split(group) != split:
+        unit = split_unit(record)
+        if self.units.get(group, unit) != unit:
+            raise RecordError(f"group straddles split units: {record['id']}")
+        time_block = time_block_of(record)
+        if split in HASHED_SPLITS and assign_split(group, record["family"], time_block) != split:
             raise RecordError(f"split does not follow the rule: {record['id']}")
         parent = record["parent"]
         if parent is not None and self.ids.get(parent) != (group, split):
@@ -190,6 +252,7 @@ class Checker:
         if self.content.setdefault(key, split) != split:
             raise RecordError(f"same content in two splits: {record['id']}")
         self.ids[record["id"]] = (group, split)
+        self.units[group] = unit
         line = canonical(record) + b"\n"
         self.whole.update(line)
         self.per_split.setdefault(split, hashlib.sha256()).update(line)
@@ -197,6 +260,7 @@ class Checker:
         self.families[record["family"]] += 1
         self.langs[record["lang"]] += 1
         self.family_lang[f"{record['family']}/{record['lang']}"] += 1
+        self.family_splits[(record["family"], split)] += 1
         self.generators[record["generator"]] += 1
         if self.sink is not None:
             self.sink.write(line)
@@ -213,7 +277,14 @@ class Checker:
             "langs": dict(sorted(self.langs.items())),
             "family_lang": dict(sorted(self.family_lang.items())),
             "generators": dict(sorted(self.generators.items())),
+            "family_splits": self._family_splits(),
         }
+
+    def _family_splits(self) -> dict:
+        audit: dict[str, dict[str, int]] = {}
+        for (family, split), count in sorted(self.family_splits.items()):
+            audit.setdefault(family, {})[split] = count
+        return audit
 
 
 def gzip_bytes(data: bytes) -> bytes:

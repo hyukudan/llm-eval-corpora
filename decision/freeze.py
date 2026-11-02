@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""Freeze the synthetic set and write manifest.json.
+"""Freeze the synthetic and robustness sets and write manifest.json.
 
 Usage:
     python freeze.py [--public CACHE_DIR --public-out DIR]
+                     [--robustness-public FILE.jsonl ... --robustness-public-out FILE]
 
 Writes data/synthetic-v1.jsonl (or .jsonl.gz with a deterministic gzip
-header when over 15 MB) and manifest.json next to this script. With
+header when over 15 MB), data/robustness-v1.jsonl (see robustness.py) and
+manifest.json next to this script. Manifest keys that this script does not
+build (such as ``authored``) are kept as they are. With
 ``--public`` it also converts the fetched MASSIVE and When2Call files (see
 fetch_public.py) into DIR and records their digests and counts; the
 converted third-party records are not written into this directory. Without
 it, the public section of an existing manifest is kept; when a source file
-is missing, its hashes are left null.
+is missing, its hashes are left null. With ``--robustness-public`` it also
+perturbs the test records of converted public files into a file outside
+``data/`` and records its digest under ``robustness.public``; without it, a
+recorded ``robustness.public`` entry is kept.
 """
 
 from __future__ import annotations
@@ -24,6 +30,7 @@ from pathlib import Path
 import convert_public
 import fetch_public
 import gen_synthetic
+import robustness
 from splits import BOUNDS, RULE_ID, SALT, Checker, canonical, file_sha256, gzip_bytes, sha256_hex
 
 HERE = Path(__file__).resolve().parent
@@ -52,6 +59,41 @@ def synthetic_payload(data: bytes) -> tuple[str, bytes]:
     if len(data) > GZIP_OVER:
         return "data/synthetic-v1.jsonl.gz", gzip_bytes(data)
     return "data/synthetic-v1.jsonl", data
+
+
+def stored_summary(summary: dict) -> dict:
+    """A Checker summary as recorded in the manifest (the split audit is not stored)."""
+    return {key: value for key, value in summary.items() if key != "family_splits"}
+
+
+def robustness_entry(manifest: dict) -> tuple[bytes, dict]:
+    """Bytes of data/robustness-v1.jsonl and its manifest entry."""
+    data, summary = robustness.build_default(manifest)
+    entry = {
+        "version": robustness.VERSION,
+        "file": robustness.FILE,
+        "file_sha256": sha256_hex(data),
+        "count": summary["count"],
+        "by_perturbation": summary["by_perturbation"],
+        "by_family": summary["by_family"],
+        "sources": summary["sources"],
+        "licence": robustness.LICENCE,
+    }
+    return data, entry
+
+
+def robustness_public_entry(manifest: dict, paths: list[Path], out: Path) -> dict:
+    """Perturb converted public test records into ``out`` and describe the result."""
+    data, summary = robustness.build_public(manifest, paths)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(data)
+    return {
+        "inputs_sha256": summary["inputs_sha256"],
+        "file_sha256": sha256_hex(data),
+        "count": summary["count"],
+        "by_perturbation": summary["by_perturbation"],
+        "by_family": summary["by_family"],
+    }
 
 
 def public_inputs(cache: Path, source: str) -> list[Path] | None:
@@ -86,15 +128,22 @@ def public_entry(source: str, cache: Path | None, out_dir: Path | None) -> dict:
         if file_sha256(path) != item["sha256"]:
             raise SystemExit(f"upstream file differs from the pinned sha256: {path}")
     out = out_dir / f"{source}.jsonl" if out_dir else None
-    entry["output"] = convert_source(source, inputs, out)
+    entry["output"] = stored_summary(convert_source(source, inputs, out))
     return entry
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Freeze the synthetic set and write the manifest.")
+    parser = argparse.ArgumentParser(description="Freeze the synthetic and robustness sets and write the manifest.")
     parser.add_argument("--public", type=Path, help="cache dir filled by fetch_public.py")
     parser.add_argument("--public-out", type=Path, help="where converted public records go")
+    parser.add_argument("--robustness-public", type=Path, nargs="+", help="converted public JSONL files to perturb")
+    parser.add_argument("--robustness-public-out", type=Path, help="where their perturbations go (outside data/)")
     args = parser.parse_args(argv)
+    if args.robustness_public and (
+        args.robustness_public_out is None or robustness.inside(args.robustness_public_out, HERE / "data")
+    ):
+        parser.error("--robustness-public needs --robustness-public-out outside data/")
+    previous = json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.exists() else {}
     if args.public_out:
         args.public_out.mkdir(parents=True, exist_ok=True)
 
@@ -105,6 +154,7 @@ def main(argv=None) -> int:
     target.write_bytes(payload)
 
     manifest = {
+        **previous,  # keeps keys built elsewhere, such as "authored"
         "schema": "llm-eval-corpora/decision-manifest-v1",
         "split_rule": {
             "rule_id": RULE_ID,
@@ -120,13 +170,22 @@ def main(argv=None) -> int:
             "file": name,
             "file_sha256": sha256_hex(payload),
             "licence": gen_synthetic.LICENCE,
-            **summary,
+            **stored_summary(summary),
         },
         "public": {source: public_entry(source, args.public, args.public_out) for source in ("massive", "when2call")},
     }
-    if args.public is None and MANIFEST.exists():
+    if args.public is None and "public" in previous:
         # Without --public, keep the public digests recorded by an earlier run.
-        manifest["public"] = json.loads(MANIFEST.read_text(encoding="utf-8"))["public"]
+        manifest["public"] = previous["public"]
+
+    robust_data, manifest["robustness"] = robustness_entry(manifest)
+    (HERE / robustness.FILE).write_bytes(robust_data)
+    if args.robustness_public:
+        manifest["robustness"]["public"] = robustness_public_entry(
+            manifest, args.robustness_public, args.robustness_public_out
+        )
+    elif "public" in previous.get("robustness", {}):
+        manifest["robustness"]["public"] = previous["robustness"]["public"]
     text = json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     MANIFEST.write_bytes(text.encode("utf-8"))
     print(canonical({"file": name, "records": summary["count"], "sha256": sha256_hex(payload)}).decode())
