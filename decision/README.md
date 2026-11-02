@@ -226,11 +226,18 @@ records with `meta.label.provenance == "teacher_agreed"`. Each source yields, in
 |---|---|---|---|
 | `option_reverse` | option list reversed | `choice` | 403 |
 | `neutral_ids` | option ids renamed `opt-1`..`opt-n` in list order; `answer` and `insufficient_option` remapped | `choice` | 403 |
-| `distractor_evidence` | one irrelevant `confirmed` evidence item (a neutral fact about office upkeep or distant weather) with a fresh ref, picked by a salted sha256 of the record id from a fixed pool per language | all, unless 64 items already | 572 |
+| `distractor_evidence` | one irrelevant `confirmed` evidence item (a neutral fact about office upkeep) with a fresh ref, picked by a salted sha256 of the record id from a fixed pool per language | synthetic, unless 64 items already | 538 |
 | `evidence_reverse` | evidence list reversed | synthetic, at least 2 items | 351 |
 
-Total 1,729 records (1,641 from 538 synthetic sources, 88 from 34 authored sources). Yes/no and
-score records keep their option order and ids, because the schema fixes them. A perturbed record has id
+Total 1,695 records (1,641 from 538 synthetic sources, 54 from 34 authored sources). Yes/no and
+score records keep their option order and ids, because the schema fixes them. The two evidence
+perturbations apply to synthetic records only: their generators compute the answer from specific facts,
+and the pool sentences avoid every subject the generators ask about (`test_decision.py` checks the
+vocabulary overlap). Authored and public requests are open-domain, so a "neutral" fact could be exactly
+what the question asks about, and their evidence can be ordered conversation turns; they get only
+`option_reverse` and `neutral_ids`. A variant that would exceed the 32 KiB record limit (a source near
+the limit whose new option ids are longer) is skipped and counted in `skipped_over_limits` (0 in the
+stored set); the build never aborts on it. A perturbed record has id
 `<source id>~<perturbation>`, the source's group, family, kind and language, split `test`,
 `parent` = the source id, and `meta` = `{"perturbation", "source_id", "robustness_version",
 "source_meta"}`. The answer always names the option with the same text. The build refuses a
@@ -254,7 +261,7 @@ python verify.py --robustness-public OUT/massive.jsonl OUT/when2call.jsonl --rob
 The output path must be outside `data/`. `freeze.py` records its digest under `robustness.public` only
 when it is built. `verify.py --robustness-public-out FILE` then requires that stored file and checks its bytes
 and counts (add `--robustness-public` to rebuild and compare it too). The stored `data/robustness-v1.jsonl` and
-its manifest entry are always required. Evidence order is never perturbed for public records (it can be conversation turns).
+its manifest entry are always required.
 
 ## Writer prompt templates
 

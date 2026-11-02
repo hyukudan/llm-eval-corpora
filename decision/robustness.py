@@ -16,8 +16,18 @@ output must be written outside ``data/``). Each source yields, in this order:
 3. ``distractor_evidence``: one irrelevant ``confirmed`` evidence item with a
    fresh ref, from a fixed per-language pool, chosen by a salted sha256 of the
    record id (skipped when the evidence already has 64 items).
-4. ``evidence_reverse``: the evidence list reversed (synthetic records with
-   at least two items only: other evidence can be ordered conversation turns).
+4. ``evidence_reverse``: the evidence list reversed (at least two items).
+
+Perturbations 3 and 4 touch the evidence, so they apply to synthetic records
+only: their generators compute the answer from specific facts that a neutral
+fact cannot bear on, and their evidence items are unordered. Authored and
+public requests are open-domain (a "neutral" fact could be what the question
+asks about) and their evidence can be ordered conversation turns, so they get
+only perturbations 1 and 2.
+
+A variant whose canonical form would exceed the 32 KiB record limit (a source
+near the limit whose new option ids are longer, for example) is skipped and
+counted in ``skipped_over_limits``; the build never aborts on it.
 
 The answer always names the option with the same text. Output records keep
 the source's group, family, kind and language, have split ``test``, id
@@ -36,7 +46,9 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from splits import MAX_EVIDENCE, SALT, Checker, RecordError, canonical, content_key, sha256_hex, time_block_of
+from splits import (
+    MAX_EVIDENCE, MAX_RECORD_BYTES, SALT, Checker, RecordError, canonical, content_key, sha256_hex, time_block_of,
+)
 
 HERE = Path(__file__).resolve().parent
 VERSION = "decision-robustness-v1"
@@ -44,15 +56,19 @@ FILE = "data/robustness-v1.jsonl"
 LICENCE = "CC-BY-4.0"
 PERTURBATIONS = ("option_reverse", "neutral_ids", "distractor_evidence", "evidence_reverse")
 
-# Neutral facts that cannot bear on any family's answer: no numbers, dates,
-# times, colours, people, money, tools or checks.
+# Neutral facts for synthetic records. They avoid every subject the generators
+# ask about (budgets, deadlines and times, tests and checks, candidates and
+# changelogs, support topics, parcels, servers, reports, invoices and their
+# status or owning team, tools, weather, translation, bookings) and contain no
+# numbers, dates, colours, people or money. test_decision.py checks the
+# overlap with the generators' vocabulary.
 DISTRACTORS = {
     "en": (
         "The coffee machine in the staff kitchen has been descaled.",
         "A new doormat was placed at the main entrance.",
         "The hallway light bulbs were replaced with energy-saving ones.",
         "The shelves in the staff kitchen were tidied and wiped down.",
-        "Light fog was reported over a distant mountain range.",
+        "The stairwell handrails were repainted.",
         "The windows of the neighbouring building were cleaned.",
     ),
     "es": (
@@ -60,7 +76,7 @@ DISTRACTORS = {
         "Se ha colocado un felpudo nuevo en la entrada principal.",
         "Las bombillas del pasillo se cambiaron por otras de bajo consumo.",
         "Las estanterías de la cocina del personal se ordenaron y limpiaron.",
-        "Se informó de niebla ligera sobre una cordillera lejana.",
+        "Se repintaron los pasamanos de la escalera.",
         "Se limpiaron las ventanas del edificio vecino.",
     ),
     "fr": (
@@ -68,7 +84,7 @@ DISTRACTORS = {
         "Un nouveau paillasson a été posé à l'entrée principale.",
         "Les ampoules du couloir ont été remplacées par des modèles basse consommation.",
         "Les étagères de la cuisine du personnel ont été rangées et nettoyées.",
-        "Un léger brouillard a été signalé sur une chaîne de montagnes lointaine.",
+        "Les rampes de l'escalier ont été repeintes.",
         "Les fenêtres de l'immeuble voisin ont été nettoyées.",
     ),
     "de": (
@@ -76,7 +92,7 @@ DISTRACTORS = {
         "Am Haupteingang wurde eine neue Fußmatte ausgelegt.",
         "Die Glühbirnen im Flur wurden durch Energiesparlampen ersetzt.",
         "Die Regale in der Teeküche wurden aufgeräumt und abgewischt.",
-        "Über einer fernen Bergkette wurde leichter Nebel gemeldet.",
+        "Die Handläufe im Treppenhaus wurden neu gestrichen.",
         "Die Fenster des Nachbargebäudes wurden geputzt.",
     ),
     "it": (
@@ -84,7 +100,7 @@ DISTRACTORS = {
         "All'ingresso principale è stato messo un nuovo zerbino.",
         "Le lampadine del corridoio sono state sostituite con modelli a basso consumo.",
         "Gli scaffali della cucina del personale sono stati riordinati e puliti.",
-        "È stata segnalata una leggera nebbia su una lontana catena montuosa.",
+        "I corrimano delle scale sono stati ridipinti.",
         "Le finestre dell'edificio vicino sono state pulite.",
     ),
     "pt": (
@@ -92,7 +108,7 @@ DISTRACTORS = {
         "Foi colocado um tapete novo na entrada principal.",
         "As lâmpadas do corredor foram trocadas por outras de baixo consumo.",
         "As prateleiras da copa dos funcionários foram arrumadas e limpas.",
-        "Foi registado nevoeiro ligeiro sobre uma cordilheira distante.",
+        "Os corrimãos da escada foram repintados.",
         "As janelas do edifício vizinho foram limpas.",
     ),
     "ca": (
@@ -100,7 +116,7 @@ DISTRACTORS = {
         "S'ha posat una estora nova a l'entrada principal.",
         "Les bombetes del passadís s'han canviat per unes de baix consum.",
         "Els prestatges de la cuina del personal s'han endreçat i netejat.",
-        "S'ha informat de boira lleugera sobre una serralada llunyana.",
+        "S'han repintat les baranes de l'escala.",
         "S'han netejat les finestres de l'edifici veí.",
     ),
 }
@@ -184,13 +200,16 @@ def evidence_reverse(source: dict):
     return _derive(source, "evidence_reverse", context=context)
 
 
-def perturb(source: dict, reorder_evidence: bool) -> list[dict]:
-    """The perturbations of one test record, in PERTURBATIONS order."""
+def perturb(source: dict, synthetic: bool) -> list[dict]:
+    """The perturbations of one test record, in PERTURBATIONS order.
+
+    Evidence perturbations (distractor, reversal) only when ``synthetic``.
+    """
     if source["split"] != "test":
         raise RecordError(f"only test records are perturbed: {source['id']}")
-    makers = [option_reverse, neutral_ids, distractor_evidence]
-    if reorder_evidence:
-        makers.append(evidence_reverse)
+    makers = [option_reverse, neutral_ids]
+    if synthetic:
+        makers += [distractor_evidence, evidence_reverse]
     out = []
     for make in makers:
         record = make(source)
@@ -208,18 +227,22 @@ def perturb(source: dict, reorder_evidence: bool) -> list[dict]:
 def build(sources, others) -> tuple[bytes, dict]:
     """Canonical JSONL bytes and a summary.
 
-    ``sources`` is a list of (records, reorder_evidence); only their test
-    records are perturbed. ``others`` are all base records: no output may
-    share the content of one outside the test split.
+    ``sources`` is a list of (records, synthetic); only their test records
+    are perturbed. ``others`` are all base records: no output may share the
+    content of one outside the test split. A variant over the record size
+    limit is skipped and counted in ``skipped_over_limits``.
     """
     foreign = {content_key(r) for r in others if r["split"] != "test"}
     checker = Checker()  # ids, parent/group/split and the split rule
-    tests = [(r, reorder) for records, reorder in sources for r in records if r["split"] == "test"]
+    tests = [(r, synthetic) for records, synthetic in sources for r in records if r["split"] == "test"]
     for record, _ in tests:
         checker.add(record)
-    lines, by_perturbation, by_family = [], Counter(), Counter()
-    for source, reorder in tests:
-        for record in perturb(source, reorder):
+    lines, by_perturbation, by_family, skipped = [], Counter(), Counter(), 0
+    for source, synthetic in tests:
+        for record in perturb(source, synthetic):
+            if len(canonical(record)) > MAX_RECORD_BYTES:
+                skipped += 1
+                continue
             checker.add(record)
             if content_key(record) in foreign:
                 raise RecordError(f"content of a non-test record: {record['id']}")
@@ -232,6 +255,7 @@ def build(sources, others) -> tuple[bytes, dict]:
         "content_sha256": sha256_hex(data),
         "by_perturbation": {name: by_perturbation[name] for name in PERTURBATIONS if by_perturbation[name]},
         "by_family": dict(sorted(by_family.items())),
+        "skipped_over_limits": skipped,
     }
     return data, summary
 

@@ -75,7 +75,7 @@ def check_robustness_public(rob: dict, manifest: dict, args, problems: list) -> 
             problems.append("robustness.public: stored file is not canonical JSONL")
     if args.robustness_public:
         data, summary = robustness.build_public(manifest, args.robustness_public)
-        for key in ("inputs_sha256", "count", "by_perturbation", "by_family"):
+        for key in ("inputs_sha256", "count", "by_perturbation", "by_family", "skipped_over_limits"):
             compare(f"robustness.public.{key}", expected[key], summary[key], problems)
         compare("robustness.public.file_sha256 (rebuilt)", expected["file_sha256"], sha256_hex(data), problems)
         if stored is not None and stored != data:

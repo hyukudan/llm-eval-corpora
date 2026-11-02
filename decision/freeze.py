@@ -76,6 +76,7 @@ def robustness_entry(manifest: dict) -> tuple[bytes, dict]:
         "count": summary["count"],
         "by_perturbation": summary["by_perturbation"],
         "by_family": summary["by_family"],
+        "skipped_over_limits": summary["skipped_over_limits"],
         "sources": summary["sources"],
         "licence": robustness.LICENCE,
     }
@@ -93,6 +94,7 @@ def robustness_public_entry(manifest: dict, paths: list[Path], out: Path) -> dic
         "count": summary["count"],
         "by_perturbation": summary["by_perturbation"],
         "by_family": summary["by_family"],
+        "skipped_over_limits": summary["skipped_over_limits"],
     }
 
 

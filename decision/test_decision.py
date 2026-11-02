@@ -13,6 +13,7 @@ import contextlib
 import copy
 import io
 import json
+import re
 import shutil
 import sys
 import tempfile
@@ -24,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import freeze  # noqa: E402
+import gen_synthetic  # noqa: E402
 import robustness  # noqa: E402
 import verify  # noqa: E402
 import splits  # noqa: E402
@@ -60,6 +62,24 @@ def record(group="g-1", family="classify", kind="choice", split=None, time_block
     }
     base.update(changes)
     return base
+
+
+def near_limit(group: str, record_id: str) -> dict:
+    """A valid choice record whose option_reverse variant is 5 bytes under the size limit.
+
+    Its neutral_ids variant (longer option ids, shorter perturbation name) is over it.
+    """
+    source = record(group=group, split="test", id=record_id, question=f"Near-limit question {record_id}?")
+    source["context"]["evidence"] = [
+        {"ref": f"e{n}", "source": "claim", "text": "x" * 4000} for n in range(1, 8)
+    ] + [{"ref": "e8", "source": "claim", "text": "y" * 100}]
+
+    def variant_size():
+        return len(splits.canonical(robustness.option_reverse(source)))
+
+    source["context"]["evidence"][-1]["text"] = "y" * (100 + splits.MAX_RECORD_BYTES - 5 - variant_size())
+    assert variant_size() == splits.MAX_RECORD_BYTES - 5
+    return splits.validate(source)
 
 
 class SplitRuleV1(unittest.TestCase):
@@ -222,6 +242,7 @@ class Robustness(unittest.TestCase):
         for kind in ("yes_no", "score"):
             names = [r["meta"]["perturbation"] for r in robustness.perturb(record(kind=kind, split="test"), True)]
             self.assertEqual(names, ["distractor_evidence", "evidence_reverse"])
+            self.assertEqual(robustness.perturb(record(kind=kind, split="test"), False), [])
 
     def test_choice_perturbations(self):
         source = record(split="test")
@@ -235,12 +256,44 @@ class Robustness(unittest.TestCase):
         self.assertEqual((added["ref"], added["source"]), ("e3", "confirmed"))
         self.assertIn(added["text"], robustness.DISTRACTORS["en"])
         self.assertEqual([e["ref"] for e in out["evidence_reverse"]["context"]["evidence"]], ["e2", "e1"])
-        self.assertNotIn("evidence_reverse", [r["meta"]["perturbation"] for r in robustness.perturb(source, False)])
+        names = [r["meta"]["perturbation"] for r in robustness.perturb(source, False)]
+        self.assertEqual(names, ["option_reverse", "neutral_ids"])  # open-domain: no evidence perturbations
 
-    def test_evidence_reverse_synthetic_only(self):
+    def test_evidence_perturbations_synthetic_only(self):
         for item in self.records:
-            if item["meta"]["perturbation"] == "evidence_reverse":
-                self.assertNotEqual(item["generator"], "writer-luna")
+            if item["meta"]["perturbation"] in ("distractor_evidence", "evidence_reverse"):
+                self.assertIn(item["generator"], gen_synthetic.GENERATORS, item["id"])
+            else:
+                self.assertIn(item["meta"]["perturbation"], ("option_reverse", "neutral_ids"))
+        authored = [r for r in self.records if r["generator"] == "writer-luna"]
+        self.assertTrue(authored)
+        self.assertEqual({r["meta"]["perturbation"] for r in authored}, {"option_reverse", "neutral_ids"})
+
+    def test_distractors_avoid_generator_vocabulary(self):
+        def strings(value):
+            if isinstance(value, str):
+                yield value
+            elif isinstance(value, dict):
+                for key, item in value.items():
+                    yield from strings(key)
+                    yield from strings(item)
+            elif isinstance(value, (list, tuple)):
+                for item in value:
+                    yield from strings(item)
+
+        def words(text):
+            return {w.lower() for w in re.findall(r"[^\W\d_]{4,}", text)}
+
+        vocabulary = set()
+        for name, value in vars(gen_synthetic).items():
+            if name.isupper():  # every text table, topic, entity, tool and value list
+                for text in strings(value):
+                    vocabulary |= words(text)
+        function_words = {"with"}
+        for lang in gen_synthetic.LANGUAGES:
+            for sentence in robustness.DISTRACTORS[lang]:
+                self.assertLessEqual(words(sentence) & vocabulary, function_words, sentence)
+        self.assertIn("weather", vocabulary)  # the check sees the tool-select requests
 
     def test_full_evidence_skips_distractor(self):
         source = record(split="test")
@@ -266,6 +319,16 @@ class Robustness(unittest.TestCase):
             robustness.build([([source], True)], [source, clash])
         data, summary = robustness.build([([source], True)], [source])
         self.assertEqual(summary["count"], 4)
+
+    def test_near_limit_variant_skipped_and_counted(self):
+        source = near_limit(TEST_GROUP, "near")
+        data, summary = robustness.build([([source], False)], [source])
+        self.assertEqual(summary["count"], 1)
+        self.assertEqual(summary["by_perturbation"], {"option_reverse": 1})
+        self.assertEqual(summary["skipped_over_limits"], 1)
+        (kept,) = [json.loads(line) for line in data.splitlines()]
+        self.assertEqual(len(splits.canonical(kept)), splits.MAX_RECORD_BYTES - 5)
+        self.assertEqual(robustness.build([([source], False)], [source])[0], data)
 
     def test_public_out_inside_data_refused(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
@@ -308,6 +371,7 @@ class VerifyAndFreeze(unittest.TestCase):
             if item["split"] == "test" and item["parent"] is None:
                 item = {**item, "id": "pub-" + item["id"], "generator": "massive", "question": item["question"] + " (pub)"}
                 lines.append(splits.canonical(item) + b"\n")
+        lines.append(splits.canonical(near_limit(TEST_GROUP, "pub-near-limit")) + b"\n")
         cls.public_in.write_bytes(b"".join(lines))
         cls.public_out = root / "out" / "robustness-public.jsonl"
         status, _ = run_quiet(freeze.main, ["--robustness-public", str(cls.public_in),
@@ -344,6 +408,8 @@ class VerifyAndFreeze(unittest.TestCase):
         public = after["robustness"].pop("public")
         self.assertEqual(after, before)
         self.assertEqual(public["file_sha256"], splits.sha256_hex(self.public))
+        self.assertEqual(public["skipped_over_limits"], 1)  # the near-limit neutral_ids variant
+        self.assertEqual(set(public["by_perturbation"]), {"option_reverse", "neutral_ids"})
         self.assertEqual(self.robust, (HERE / "data" / "robustness-v1.jsonl").read_bytes())
 
     def test_freeze_keeps_recorded_public_entry(self):
