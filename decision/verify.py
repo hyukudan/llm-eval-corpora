@@ -2,17 +2,20 @@
 """Check the frozen decision data against manifest.json.
 
 Usage:
-    python verify.py [--public CACHE_DIR] [--robustness-public FILE.jsonl ...]
+    python verify.py [--public CACHE_DIR]
+                     [--robustness-public FILE.jsonl ... --robustness-public-out FILE]
 
 Regenerates the synthetic set from the manifest's seed and count, and checks
 the stored file, the whole-content digest and every split's digest and
 count. It rebuilds the robustness set from the stored synthetic and authored
-files and checks it against the manifest and data/robustness-v1.jsonl. With
-``--public`` it also re-runs the converters on the fetched files (see
-fetch_public.py) and checks the upstream file digests and the converted
-digests and counts; with ``--robustness-public`` it rebuilds the perturbations
-of converted public files and checks ``robustness.public``. Only the keys a
-manifest entry stores are compared. Exits 1 on any mismatch.
+files and checks it against the manifest and data/robustness-v1.jsonl (both
+are required). With ``--public`` it also re-runs the converters on the
+fetched files (see fetch_public.py) and checks the upstream file digests and
+the converted digests and counts. With ``--robustness-public-out`` it checks
+the stored public perturbation file (required, bytes and counts) against
+``robustness.public``; adding ``--robustness-public`` also rebuilds it from
+the converted public files and compares the bytes. Only the keys a manifest
+entry stores are compared. Exits 1 on any mismatch.
 """
 
 from __future__ import annotations
@@ -21,11 +24,12 @@ import argparse
 import gzip
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 import freeze
 import robustness
-from splits import file_sha256, sha256_hex
+from splits import canonical, file_sha256, sha256_hex
 
 HERE = Path(__file__).resolve().parent
 
@@ -41,11 +45,51 @@ def check_summary(label: str, expected: dict, actual: dict, problems: list) -> N
         compare(f"{label}.{key}", expected.get(key), actual.get(key), problems)
 
 
+def perturbation_counts(data: bytes) -> dict:
+    """Count, per-perturbation and per-family counts of robustness JSONL bytes."""
+    records = [json.loads(line) for line in data.splitlines()]
+    by_perturbation, by_family = Counter(r["meta"]["perturbation"] for r in records), Counter(r["family"] for r in records)
+    return {
+        "count": len(records),
+        "by_perturbation": {name: by_perturbation[name] for name in robustness.PERTURBATIONS if by_perturbation[name]},
+        "by_family": dict(sorted(by_family.items())),
+    }
+
+
+def check_robustness_public(rob: dict, manifest: dict, args, problems: list) -> None:
+    """Stored (and, with inputs, rebuilt) public perturbations against robustness.public."""
+    expected = rob.get("public")
+    if not expected:
+        problems.append("robustness: manifest has no recorded public entry to compare")
+        return
+    out = args.robustness_public_out
+    if not out.is_file():
+        problems.append(f"robustness.public: missing output file {out}")
+        stored = None
+    else:
+        stored = out.read_bytes()
+        compare("robustness.public.file_sha256 (stored)", expected["file_sha256"], sha256_hex(stored), problems)
+        for key, value in perturbation_counts(stored).items():
+            compare(f"robustness.public.{key} (stored)", expected[key], value, problems)
+        if any(canonical(json.loads(line)) != line for line in stored.splitlines()):
+            problems.append("robustness.public: stored file is not canonical JSONL")
+    if args.robustness_public:
+        data, summary = robustness.build_public(manifest, args.robustness_public)
+        for key in ("inputs_sha256", "count", "by_perturbation", "by_family"):
+            compare(f"robustness.public.{key}", expected[key], summary[key], problems)
+        compare("robustness.public.file_sha256 (rebuilt)", expected["file_sha256"], sha256_hex(data), problems)
+        if stored is not None and stored != data:
+            problems.append("robustness.public: stored file differs from the rebuilt bytes")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Verify frozen decision data.")
     parser.add_argument("--public", type=Path, help="cache dir filled by fetch_public.py")
     parser.add_argument("--robustness-public", type=Path, nargs="+", help="converted public JSONL files")
+    parser.add_argument("--robustness-public-out", type=Path, help="stored public perturbation file to check")
     args = parser.parse_args(argv)
+    if args.robustness_public and args.robustness_public_out is None:
+        parser.error("--robustness-public needs --robustness-public-out (the stored file to check)")
     manifest = json.loads((HERE / "manifest.json").read_text(encoding="utf-8"))
     problems: list[str] = []
 
@@ -78,7 +122,9 @@ def main(argv=None) -> int:
 
     # Robustness: rebuild from the stored data and compare with the manifest and the stored file.
     rob = manifest.get("robustness")
-    if rob:
+    if not isinstance(rob, dict) or not rob:
+        problems.append("robustness: manifest entry missing or empty")
+    else:
         data, entry = freeze.robustness_entry(manifest)
         for key, value in entry.items():
             compare(f"robustness.{key}", rob.get(key), value, problems)
@@ -87,22 +133,15 @@ def main(argv=None) -> int:
         if auth:
             compare("robustness.sources.authored_test_sha256 (manifest)",
                     auth["splits"]["test"]["content_sha256"], rob["sources"]["authored_test_sha256"], problems)
-        stored = HERE / rob["file"]
-        if not stored.exists():
-            problems.append(f"missing {rob['file']}")
+        stored = HERE / str(rob.get("file"))
+        if not stored.is_file():
+            problems.append(f"missing {rob.get('file')}")
         else:
-            compare("robustness.file_sha256 (stored)", rob["file_sha256"], file_sha256(stored), problems)
-        if args.robustness_public:
-            expected = rob.get("public")
-            _, summary = robustness.build_public(manifest, args.robustness_public)
-            if expected is None:
-                problems.append("robustness: manifest has no recorded public entry to compare")
-            else:
-                for key in ("inputs_sha256", "count", "by_perturbation", "by_family"):
-                    compare(f"robustness.public.{key}", expected[key], summary[key], problems)
-                compare("robustness.public.file_sha256", expected["file_sha256"], summary["content_sha256"], problems)
-    elif args.robustness_public:
-        problems.append("robustness: manifest has no robustness entry")
+            compare("robustness.file_sha256 (stored)", rob.get("file_sha256"), file_sha256(stored), problems)
+            if stored.read_bytes() != data:
+                problems.append("robustness: stored file differs from the rebuilt bytes")
+        if args.robustness_public_out:
+            check_robustness_public(rob, manifest, args, problems)
 
     # Public: re-run converters on the cached upstream files.
     if args.public:

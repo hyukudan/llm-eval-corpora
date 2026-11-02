@@ -248,11 +248,13 @@ Converted public records are not stored here. To perturb their test records:
 ```
 python robustness.py --public OUT/massive.jsonl OUT/when2call.jsonl --out OUT/robustness-public.jsonl
 python freeze.py --robustness-public OUT/massive.jsonl OUT/when2call.jsonl --robustness-public-out OUT/robustness-public.jsonl
-python verify.py --robustness-public OUT/massive.jsonl OUT/when2call.jsonl
+python verify.py --robustness-public OUT/massive.jsonl OUT/when2call.jsonl --robustness-public-out OUT/robustness-public.jsonl
 ```
 
 The output path must be outside `data/`. `freeze.py` records its digest under `robustness.public` only
-when it is built; evidence order is never perturbed for public records (it can be conversation turns).
+when it is built. `verify.py --robustness-public-out FILE` then requires that stored file and checks its bytes
+and counts (add `--robustness-public` to rebuild and compare it too). The stored `data/robustness-v1.jsonl` and
+its manifest entry are always required. Evidence order is never perturbed for public records (it can be conversation turns).
 
 ## Writer prompt templates
 

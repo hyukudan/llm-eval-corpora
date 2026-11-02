@@ -84,14 +84,17 @@ def sha256_hex(data: bytes) -> str:
 
 
 def check_time_block(time_block) -> str:
-    """Return a valid time block ("YYYY-MM-DD" or "YYYY-MM", a real date) or raise RecordError."""
+    """Return a valid time block or raise RecordError.
+
+    "YYYY-MM-DD" must be a real calendar date and "YYYY-MM" a real month,
+    both with year 0001-9999 (the month form is checked as its first day).
+    """
     if type(time_block) is not str or not TIME_BLOCK_PATTERN.fullmatch(time_block):
         raise RecordError("time_block_format")
-    if len(time_block) == 10:
-        try:
-            datetime.date.fromisoformat(time_block)
-        except ValueError:
-            raise RecordError("time_block_format") from None
+    try:
+        datetime.date.fromisoformat(time_block if len(time_block) == 10 else time_block + "-01")
+    except ValueError:
+        raise RecordError("time_block_format") from None
     return time_block
 
 
@@ -122,9 +125,16 @@ def assign_split(group: str, family: str | None = None, time_block: str | None =
 
 
 def time_block_of(record: dict):
-    """The record's ``meta.time_block``, or None (also when meta is not an object)."""
+    """The record's checked ``meta.time_block``, or None when the key is absent.
+
+    Only an absent key (or a meta that is not an object) means "no time
+    block"; a present value that is not a valid time block, ``null``
+    included, raises RecordError.
+    """
     meta = record.get("meta")
-    return meta.get("time_block") if isinstance(meta, dict) else None
+    if not isinstance(meta, dict) or "time_block" not in meta:
+        return None
+    return check_time_block(meta["time_block"])
 
 
 def split_unit(record: dict) -> tuple:
@@ -132,7 +142,7 @@ def split_unit(record: dict) -> tuple:
     time_block = time_block_of(record)
     if time_block is None:
         return (RULE_ID, record["group"])
-    return (TIMEBLOCK_RULE_ID, record["family"], check_time_block(time_block))
+    return (TIMEBLOCK_RULE_ID, record["family"], time_block)
 
 
 def content_key(record: dict) -> str:

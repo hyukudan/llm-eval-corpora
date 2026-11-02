@@ -9,16 +9,23 @@ or directly:
 
 from __future__ import annotations
 
+import contextlib
 import copy
+import io
 import json
+import shutil
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import freeze  # noqa: E402
 import robustness  # noqa: E402
+import verify  # noqa: E402
 import splits  # noqa: E402
 from splits import Checker, RecordError, assign_split  # noqa: E402
 
@@ -123,13 +130,23 @@ class TimeBlockRule(unittest.TestCase):
 
     def test_bad_format_refused(self):
         for bad in ("2026", "2026-13", "2026-00", "2026-02-30", "2026-1-05", "26-01", "2026-01-01T00",
-                    " 2026-01", "2026-01\n", "２０２６-01", 202601, ""):
+                    " 2026-01", "2026-01\n", "２０２６-01", 202601, "", "0000-01", "0000-01-01", "0000-12"):
             with self.assertRaises(RecordError, msg=repr(bad)):
                 assign_split("g", "route", bad)
         with self.assertRaises(RecordError):
             Checker().add(record(time_block="2026-02-30", split="test"))
-        for good in ("2026-01", "2024-02-29", "1999-12"):
+        for good in ("2026-01", "2024-02-29", "1999-12", "0001-01", "9999-12", "9999-12-31"):
             self.assertIn(assign_split("g", "route", good), splits.HASHED_SPLITS)
+
+    def test_present_non_string_time_block_refused(self):
+        for bad in (None, 202601, ["2026-01"], {"block": "2026-01"}, "0000-01"):
+            item = record(split="test", meta={"time_block": bad})
+            with self.assertRaises(RecordError, msg=repr(bad)):
+                splits.time_block_of(item)
+            with self.assertRaises(RecordError, msg=repr(bad)):
+                Checker().add(item)
+        self.assertIsNone(splits.time_block_of(record(meta={})))  # only an absent key means none
+        self.assertIsNone(splits.time_block_of(record(meta="not an object")))
 
     def test_split_must_follow_time_block_rule(self):
         item = record(group="g", family="route", time_block="2026-03")
@@ -251,8 +268,128 @@ class Robustness(unittest.TestCase):
         self.assertEqual(summary["count"], 4)
 
     def test_public_out_inside_data_refused(self):
-        with self.assertRaises(SystemExit):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             robustness.main(["--public", str(HERE / "data" / "x.jsonl"), "--out", str(HERE / "data" / "y.jsonl")])
+
+
+def run_quiet(function, argv) -> tuple[int, str]:
+    """Exit status and stdout of a script's main()."""
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        status = function(argv)
+    return status, buffer.getvalue()
+
+
+class VerifyAndFreeze(unittest.TestCase):
+    """verify.main and freeze.main on a temporary copy of this directory's data."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        root = Path(cls.tmp.name)
+        cls.here = root / "decision"
+        (cls.here / "data").mkdir(parents=True)
+        for name in ("synthetic-v1.jsonl", "authored-v1.jsonl", "authored-v1-unlabelled.jsonl", "robustness-v1.jsonl"):
+            shutil.copyfile(HERE / "data" / name, cls.here / "data" / name)
+        shutil.copyfile(HERE / "manifest.json", cls.here / "manifest.json")
+        cls.patches = [
+            mock.patch.object(verify, "HERE", cls.here),
+            mock.patch.object(robustness, "HERE", cls.here),
+            mock.patch.object(freeze, "HERE", cls.here),
+            mock.patch.object(freeze, "MANIFEST", cls.here / "manifest.json"),
+        ]
+        for patch in cls.patches:
+            patch.start()
+        # A stand-in for converted public records: synthetic test records with new ids and text.
+        cls.public_in = root / "public" / "converted.jsonl"
+        cls.public_in.parent.mkdir()
+        lines = []
+        for item in SYNTHETIC:
+            if item["split"] == "test" and item["parent"] is None:
+                item = {**item, "id": "pub-" + item["id"], "generator": "massive", "question": item["question"] + " (pub)"}
+                lines.append(splits.canonical(item) + b"\n")
+        cls.public_in.write_bytes(b"".join(lines))
+        cls.public_out = root / "out" / "robustness-public.jsonl"
+        status, _ = run_quiet(freeze.main, ["--robustness-public", str(cls.public_in),
+                                            "--robustness-public-out", str(cls.public_out)])
+        assert status == 0
+        cls.manifest = (cls.here / "manifest.json").read_bytes()
+        cls.robust = (cls.here / "data" / "robustness-v1.jsonl").read_bytes()
+        cls.public = cls.public_out.read_bytes()
+
+    @classmethod
+    def tearDownClass(cls):
+        for patch in cls.patches:
+            patch.stop()
+        cls.tmp.cleanup()
+
+    def setUp(self):
+        (self.here / "manifest.json").write_bytes(self.manifest)
+        (self.here / "data" / "robustness-v1.jsonl").write_bytes(self.robust)
+        self.public_out.write_bytes(self.public)
+
+    def set_manifest(self, change):
+        manifest = json.loads(self.manifest)
+        change(manifest)
+        (self.here / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    def assert_mismatch(self, argv, text):
+        status, out = run_quiet(verify.main, argv)
+        self.assertEqual(status, 1, out)
+        self.assertIn(text, out)
+
+    def test_freeze_adds_only_the_public_entry(self):
+        before = json.loads((HERE / "manifest.json").read_bytes())
+        after = json.loads(self.manifest)
+        public = after["robustness"].pop("public")
+        self.assertEqual(after, before)
+        self.assertEqual(public["file_sha256"], splits.sha256_hex(self.public))
+        self.assertEqual(self.robust, (HERE / "data" / "robustness-v1.jsonl").read_bytes())
+
+    def test_freeze_keeps_recorded_public_entry(self):
+        status, _ = run_quiet(freeze.main, [])
+        self.assertEqual(status, 0)
+        self.assertEqual((self.here / "manifest.json").read_bytes(), self.manifest)
+
+    def test_ok(self):
+        public = ["--robustness-public", str(self.public_in), "--robustness-public-out", str(self.public_out)]
+        for argv in ([], ["--robustness-public-out", str(self.public_out)], public):
+            status, out = run_quiet(verify.main, argv)
+            self.assertEqual((status, out.strip()), (0, "OK"), argv)
+
+    def test_missing_or_empty_robustness_entry(self):
+        self.set_manifest(lambda m: m.pop("robustness"))
+        self.assert_mismatch([], "robustness: manifest entry missing or empty")
+        self.set_manifest(lambda m: m.update(robustness={}))
+        self.assert_mismatch([], "robustness: manifest entry missing or empty")
+
+    def test_stored_robustness_file_required_and_checked(self):
+        (self.here / "data" / "robustness-v1.jsonl").unlink()
+        self.assert_mismatch([], "missing data/robustness-v1.jsonl")
+        (self.here / "data" / "robustness-v1.jsonl").write_bytes(self.robust[:-1])
+        self.assert_mismatch([], "robustness.file_sha256 (stored)")
+
+    def test_public_output_required(self):
+        self.public_out.unlink()
+        self.assert_mismatch(["--robustness-public-out", str(self.public_out)], "missing output file")
+        self.assert_mismatch(["--robustness-public", str(self.public_in), "--robustness-public-out",
+                              str(self.public_out)], "missing output file")
+
+    def test_public_output_edited(self):
+        lines = self.public.splitlines(keepends=True)
+        for edited in (b"".join(lines[:-1]), self.public.replace(b"(pub)", b"(PUB)", 1)):
+            self.public_out.write_bytes(edited)
+            self.assert_mismatch(["--robustness-public-out", str(self.public_out)], "robustness.public.file_sha256 (stored)")
+            self.assert_mismatch(["--robustness-public", str(self.public_in), "--robustness-public-out",
+                                  str(self.public_out)], "stored file differs from the rebuilt bytes")
+        self.public_out.write_bytes(b"".join(lines[:-1]))
+        self.assert_mismatch(["--robustness-public-out", str(self.public_out)], "robustness.public.count (stored)")
+
+    def test_public_needs_output_argument_and_entry(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            verify.main(["--robustness-public", str(self.public_in)])
+        self.set_manifest(lambda m: m["robustness"].pop("public"))
+        self.assert_mismatch(["--robustness-public-out", str(self.public_out)], "no recorded public entry")
 
 
 if __name__ == "__main__":
