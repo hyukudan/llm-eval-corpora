@@ -69,6 +69,31 @@ Frozen set (`freeze.py`: seed `20261029`, 6000 scenarios):
 
 `manifest.json` lists the sha256 of the data file and of each split, and the counts per family, language and family/language.
 
+## Synthetic v2
+
+`gen_synthetic_v2.py` adds `tool-select-v2` (32 tools, required versus optional
+parameters, omitted values, earlier turns and conflicting values),
+`ready-receipt-v2` (40% clean positives plus stale, wrong-component, failing,
+pending and claim-only cases), `severity-score-v2` (16 checks, warnings ignored)
+and `claim-review-v2` (matching, missing, conflicting or unrelated receipts and
+disagreeing claims). All four support en/es/fr and compute labels from scenario
+state. V1 and its frozen files remain unchanged.
+
+```
+python decision/gen_synthetic_v2.py --seed 1 --count 16000 --out pool.jsonl
+python decision/gen_synthetic_v2.py --seed 2 --count 4000 --families next_tool --exclude pool.jsonl --exclude decision/data/synthetic-v1.jsonl --out extra.jsonl
+```
+
+Count means scenarios, shared equally across the selected families; choice
+scenarios also emit a permuted child. Sorted generators and en/es/fr cycle in
+order. Groups start with `syn2-`; metadata records `decision-synth-v2`. Canonical
+JSONL bytes are deterministic for seed, count, selected families and exclusion
+contents. `--exclude` is repeatable and compares `splits.content_key`; excluded
+or repeated content is redrawn up to 32 times, then skipped. Run the tests with
+`python -m unittest discover -s decision -p "test_*.py"`; v2 tests include
+4,000 scenarios per family for each of seeds 1 and 2, requiring at least 90%
+novel seed-2 records against seed 1.
+
 ## Split rule
 
 `splits.py` assigns a split from the record's `group` alone:
