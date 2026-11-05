@@ -76,7 +76,7 @@ class GeneratorV2(unittest.TestCase):
                 0 if record["kind"] == "score" else 1,
             )
 
-    def test_tool_catalogue_and_rendered_labels(self):
+    def test_tool_catalogue_and_structured_labels(self):
         self.assertGreaterEqual(len(gen.TOOLS), 30)
         for required, optional, actions in gen.TOOLS.values():
             self.assertTrue(1 <= len(required) <= 4)
@@ -92,20 +92,16 @@ class GeneratorV2(unittest.TestCase):
             shape, tool = state["shape"], state["tool"]
             seen[(record["lang"], shape)] += 1
             required, optional, _ = gen.TOOLS[tool]
-            labels = dict(zip(gen.VALUES, gen.PARAM_LABELS[record["lang"]]))
             texts = [e["text"] for e in record["context"]["evidence"]]
-            # Parse values from all rendered turns, independently of the oracle's audit.
-            found = {}
-            for param in required + optional:
-                found[param] = {
-                    v
-                    for v in gen.VALUES[param]
-                    if any(
-                        re.search(re.escape(labels[param] + " " + v) + r"(?=;|$)", text)
-                        for text in texts
-                    )
-                }
+            # Recompute availability and conflicts from structured turns, never
+            # from wording or the generator's cached missing/ambiguous fields.
+            found = {p: set() for p in required + optional}
+            for turn in (state["given"], state["earlier"], state["conflicting"]):
+                for param, value in turn.items():
+                    self.assertIn(value, gen.parameter_values(tool, param, record["lang"]))
+                    found[param].add(value)
             unresolved = [p for p in required if len(found[p]) != 1]
+            self.assertEqual(state["missing"], [p for p in required if not found[p]])
             offered = [o["id"][5:] for o in record["options"] if o["id"].startswith("call_")]
             self.assertIn(len(offered), (3, 4))
             expected = "none" if tool not in offered else "ask" if unresolved else f"call_{tool}"
@@ -123,8 +119,8 @@ class GeneratorV2(unittest.TestCase):
             if shape == "earlier":
                 self.assertEqual(len(texts), 2)
                 for param, value in state["earlier"].items():
-                    self.assertNotIn(labels[param] + " " + value, texts[0])
-                    self.assertIn(labels[param] + " " + value, texts[1])
+                    self.assertNotIn(param, state["given"])
+                    self.assertEqual(found[param], {value})
             if shape == "shared_params":
                 self.assertTrue(
                     any(set(required) & set(gen.TOOLS[n][0]) for n in offered if n != tool)
@@ -138,6 +134,36 @@ class GeneratorV2(unittest.TestCase):
                 for shape in gen.TOOL_SHAPES
             )
         )
+
+    def test_natural_tool_requests_and_safe_options(self):
+        old = re.compile(r"\bwith \w+ [^;]+;|\b(?:zone|note|depot|article|collection)-[0-9]+|\. with\b")
+        for record in self.records:
+            if record["family"] != "next_tool":
+                continue
+            for evidence in record["context"]["evidence"]:
+                self.assertIsNone(old.search(evidence["text"]), evidence["text"])
+            for option in record["options"]:
+                for forbidden in ("\n", "\r", " ]", "Answer code:"):
+                    self.assertNotIn(forbidden, option["text"])
+        for tool, (required, optional, _) in gen.TOOLS.items():
+            for lang in gen.LANGUAGES:
+                values = {p: gen.parameter_values(tool, p, lang)[0] for p in required + optional}
+                requests = set()
+                for frame in range(3):
+                    rng = mock.Mock()
+                    rng.randrange.return_value = frame
+                    requests.add(gen.tool_request(rng, lang, tool, values))
+                self.assertEqual(len(requests), 3)
+
+    def test_grade_balance(self):
+        counts = Counter()
+        for record in gen.generate(7001, 4000, ("grade",)):
+            counts[record["answer"]] += 1
+            state = record["meta"]["scenario"]
+            self.assertEqual(record["answer"], f"level{min(3, len(state['failing']))}")
+            self.assertLessEqual(len(state["failing"]), 5)
+        self.assertEqual(set(counts), {f"level{n}" for n in range(4)})
+        self.assertTrue(all(0.22 <= n / 4000 <= 0.28 for n in counts.values()))
 
     def test_completion_rendered_labels(self):
         seen = set()

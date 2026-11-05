@@ -203,51 +203,169 @@ TOOLS = {
     ),
 }
 VALUES = {
-    "location": tuple(f"zone-{n}" for n in range(1, 17)),
-    "destination": tuple(f"depot-{n}" for n in range(1, 17)),
-    "date": tuple(f"2031-06-{n:02d}" for n in range(1, 25)),
+    "location": ("Lyon", "Porto", "Madrid", "Nantes", "Bilbao", "Lisbon", "Dublin", "Bristol"),
+    "destination": ("Seville", "Paris", "Bordeaux", "Valencia", "Cork", "Granada", "Tours", "Cadiz"),
+    "date": ("2031-06-12", "2031-07-04", "12/08/2031", "23/09/2031",
+             "05/10/2031", "2031-11-18", "2032-01-09", "17/02/2032"),
     "quantity": tuple(str(n) for n in range(2, 26)),
-    "reference": tuple(f"ref-{n}" for n in range(101, 125)),
-    "item": tuple(f"article-{n}" for n in range(1, 17)),
-    "collection": tuple(f"collection-{n}" for n in range(1, 17)),
-    "unit": ("mm", "cm", "m", "km", "mg", "g", "kg", "litre"),
-    "note": tuple(f"note-{n}" for n in range(1, 17)),
+    "reference": tuple(f"{prefix}-{n}" for prefix in ("INV", "BK", "ORD")
+                       for n in (4821, 5932, 6147, 7258, 8369, 9470, 1583, 2694)),
+    "item": ("Atlas", "Horizons", "Voyages", "Panorama", "Mosaic", "Origins", "Seasons", "Elements"),
+    "collection": ("Finance", "Design", "Operations", "Research", "Events", "Purchasing", "Training", "Archives"),
+    "unit": ("mm", "cm", "m", "km", "mg", "g", "kg", "litres"),
+    "note": ("urgent", "fragile", "priority", "confidential", "express", "standard", "internal", "reusable"),
 }
-PARAM_LABELS = {
-    "en": (
-        "location",
-        "destination",
-        "date",
-        "quantity",
-        "reference",
-        "item",
-        "collection",
-        "unit",
-        "note",
+# Localized values and tool-specific choices keep the same structured parameter keys.
+WORD_VALUES = {
+    "date": (
+        ("12 March 2031", "4 April 2031", "May 16, 2031", "December 23, 2031"),
+        ("12 de marzo de 2031", "4 de abril de 2031", "16 de mayo de 2031", "23 de diciembre de 2031"),
+        ("12 mars 2031", "4 avril 2031", "16 mai 2031", "23 décembre 2031"),
     ),
-    "es": (
-        "ubicación",
-        "destino",
-        "fecha",
-        "cantidad",
-        "referencia",
-        "artículo",
-        "colección",
-        "unidad",
-        "nota",
+    "note": (
+        VALUES["note"],
+        ("urgente", "frágil", "prioritario", "confidencial", "exprés", "normal", "interno", "reutilizable"),
+        ("urgent", "fragile", "prioritaire", "confidentiel", "express", "standard", "interne", "réutilisable"),
     ),
-    "fr": (
-        "lieu",
-        "destination",
-        "date",
-        "quantité",
-        "référence",
-        "article",
-        "collection",
-        "unité",
-        "note",
+    "meal": (
+        ("soup", "salad", "pasta", "rice", "couscous", "pizza", "curry", "risotto"),
+        ("sopa", "ensalada", "pasta", "arroz", "cuscús", "pizza", "curry", "risotto"),
+        ("soupe", "salade", "pâtes", "riz", "couscous", "pizza", "curry", "risotto"),
+    ),
+    "equipment": (
+        ("the printer", "the scanner", "the projector", "the camera", "the pump", "the oven", "the freezer", "the heater"),
+        ("la impresora", "el escáner", "el proyector", "la cámara", "la bomba", "el horno", "el congelador", "el calentador"),
+        ("l'imprimante", "le scanner", "le projecteur", "la caméra", "la pompe", "le four", "le congélateur", "le radiateur"),
     ),
 }
+
+
+def parameter_values(tool, param, lang):
+    index = LANGUAGES.index(lang)
+    if param == "item" and tool in ("order_meal", "plan_menu"):
+        return WORD_VALUES["meal"][index]
+    if param == "item" and tool != "order_books":
+        return WORD_VALUES["equipment"][index]
+    if param == "unit" and tool == "calculate_area":
+        return ("mm²", "cm²", "m²", "km²", "ft²", "yd²", "in²", "ha")
+    if param == "date":
+        return VALUES[param] + WORD_VALUES[param][index]
+    if param in WORD_VALUES:
+        return WORD_VALUES[param][index]
+    return VALUES[param]
+
+
+# Each clause is optional as a whole: omitted values leave no gap marker.
+# Quantity clauses describe the operation's actual units rather than field names.
+QUANTITIES = {
+    "reserve_room": ("for {v} people", "para {v} personas", "pour {v} personnes"),
+    "rent_bicycle": ("for {v} bicycles", "para {v} bicicletas", "pour {v} vélos"),
+    "order_books": ("for {v} copies", "para {v} ejemplares", "pour {v} exemplaires"),
+    "ship_parcel": ("for {v} parcels", "para {v} paquetes", "pour {v} colis"),
+    "book_train": ("for {v} passengers", "para {v} pasajeros", "pour {v} passagers"),
+    "book_ferry": ("for {v} passengers", "para {v} pasajeros", "pour {v} passagers"),
+    "water_garden": ("using {v} litres of water", "usando {v} litros de agua", "avec {v} litres d'eau"),
+    "convert_units": ("for a reading of {v}", "para una lectura de {v}", "pour une mesure de {v}"),
+    "calculate_area": ("for a square with sides of {v} metres", "para un cuadrado de {v} metros de lado", "pour un carré de {v} mètres de côté"),
+    "order_meal": ("for {v} servings", "para {v} raciones", "pour {v} portions"),
+    "plan_menu": ("for {v} guests", "para {v} invitados", "pour {v} convives"),
+    "print_poster": ("for {v} copies", "para {v} copias", "pour {v} exemplaires"),
+    "rent_rackets": ("for {v} rackets", "para {v} raquetas", "pour {v} raquettes"),
+    "move_inventory": ("for {v} units", "para {v} unidades", "pour {v} unités"),
+    "reserve_exhibit": ("for {v} visitors", "para {v} visitantes", "pour {v} visiteurs"),
+}
+
+
+def parameter_phrase(tool, param, value, lang):
+    forms = {
+        "location": ("in {v}", "en {v}", "à {v}"),
+        "destination": ("to {v}", "a {v}", "vers {v}"),
+        "date": ("on {v}", "el {v}", "le {v}"),
+        "reference": ("under reference {v}", "con la referencia {v}", "sous la référence {v}"),
+        "item": ("for {v}", "para {v}", "pour {v}"),
+        "collection": ('in the "{v}" collection', 'en la colección «{v}»', 'dans la collection « {v} »'),
+        "unit": ("expressed in {v}", "expresada en {v}", "exprimée en {v}"),
+        "note": (', and add the note "{v}"', ', y añade la nota «{v}»', ', et ajoutez la note « {v} »'),
+    }
+    if param == "quantity":
+        templates = QUANTITIES[tool]
+    elif param == "location" and tool in ("book_train", "book_ferry", "move_inventory"):
+        templates = ("from {v}", "desde {v}", "depuis {v}")
+    elif param == "destination" and tool in ("create_backup", "restore_backup"):
+        templates = ('to the "{v}" archive', 'al archivo «{v}»', 'vers les archives « {v} »')
+    elif param == "item" and tool == "order_books":
+        templates = ('with the title "{v}"', 'con el título «{v}»', 'avec le titre « {v} »')
+    elif param == "item" and tool == "plan_menu":
+        templates = ("featuring {v}", "con {v}", "avec {v}")
+    elif param == "unit" and tool == "convert_units":
+        templates = ("in {v}", "en {v}", "en {v}")
+    else:
+        templates = forms[param]
+    return templates[LANGUAGES.index(lang)].format(v=value)
+
+
+def tool_action(tool, values, lang):
+    """Embed object and count where the operation naturally takes them."""
+    action = TOOLS[tool][2][LANGUAGES.index(lang)]
+    remaining = dict(values)
+    quantity = remaining.get("quantity")
+    counted = {
+        "rent_bicycle": ("rent {q} bicycles", "alquilar {q} bicicletas", "louer {q} vélos"),
+        "rent_rackets": ("rent {q} rackets", "alquilar {q} raquetas", "louer {q} raquettes"),
+        "order_books": ("order {q} books", "pedir {q} libros", "commander {q} livres"),
+        "ship_parcel": ("ship {q} parcels", "enviar {q} paquetes", "expédier {q} colis"),
+        "print_poster": ("print {q} posters", "imprimir {q} carteles", "imprimer {q} affiches"),
+    }
+    if quantity and tool in counted:
+        action = counted[tool][LANGUAGES.index(lang)].format(q=quantity)
+        del remaining["quantity"]
+    item = remaining.get("item")
+    if item and tool in ("schedule_repair", "quote_repair", "check_inventory", "move_inventory"):
+        forms = {
+            "schedule_repair": ("schedule a repair for {v}", "programar una reparación para {v}", "planifier une réparation pour {v}"),
+            "quote_repair": ("estimate the cost of repairing {v}", "estimar el coste de reparar {v}", "estimer le coût de réparation pour {v}"),
+            "check_inventory": ("check the stock of {v}", "consultar el inventario relacionado con {v}", "consulter le stock pour {v}"),
+            "move_inventory": ("move {v}", "trasladar {v}", "déplacer {v}"),
+        }
+        action = forms[tool][LANGUAGES.index(lang)].format(v=item)
+        del remaining["item"]
+    if item and tool == "order_meal":
+        action = localized(lang, "order {v}", "pedir {v}", "commander {v}").format(v=item)
+        del remaining["item"]
+    return action, remaining
+
+
+def tool_request(rng, lang, tool, values):
+    # Three sentence frames per operation and language; fronting and shuffling
+    # change parameter order independently of the scenario's label.
+    action, remaining = tool_action(tool, values, lang)
+    params = [p for p in remaining if p != "note"]
+    rng.shuffle(params)
+    clauses = [parameter_phrase(tool, p, values[p], lang) for p in params]
+    frame = rng.randrange(3)
+    front = ""
+    if frame == 2 and clauses:
+        front = clauses.pop(0)
+        front = front[0].upper() + front[1:] + ", "
+    details = (" " + " ".join(clauses)) if clauses else ""
+    note = ""
+    if "note" in values:
+        note = localized(
+            lang,
+            ' Please add the note "{v}".',
+            ' Añade la nota «{v}».',
+            ' Ajoutez la note « {v} ».',
+        ).format(v=values["note"])
+    frames = localized(
+        lang,
+        ("Could you {a}{d}?{n}", "I'd like to {a}{d}.{n}", "{f}please {a}{d}.{n}"),
+        ("¿Puedes {a}{d}?{n}", "Quisiera {a}{d}.{n}", "{f}me gustaría {a}{d}.{n}"),
+        ("Pouvez-vous {a}{d} ?{n}", "Je souhaite {a}{d}.{n}", "{f}je voudrais {a}{d}.{n}"),
+    )
+    request = frames[frame].format(a=action, d=details, n=note, f=front)
+    return request[0].upper() + request[1:]
+
+
 TOOL_SHAPES = (
     "complete",
     "missing_one",
@@ -353,7 +471,7 @@ def _scenario_tool(rng, lang):
         offered.remove(tool)
         offered.append(rng.choice([n for n in TOOLS if n not in offered and n != tool]))
     rng.shuffle(offered)
-    given = {p: rng.choice(VALUES[p]) for p in required + optional}
+    given = {p: rng.choice(parameter_values(tool, p, lang)) for p in required + optional}
     removed = (
         rng.sample(required, 2 if shape == "missing_two" else 1)
         if shape in ("missing_one", "missing_two")
@@ -367,50 +485,44 @@ def _scenario_tool(rng, lang):
     if shape == "earlier":
         p = rng.choice(required)
         earlier[p] = given.pop(p)
-    labels = dict(zip(VALUES, PARAM_LABELS[lang]))
-
-    def details(values):
-        return "; ".join(
-            localized(lang, "with {p} {v}", "con {p} {v}", "avec {p} {v}").format(p=labels[p], v=v)
-            for p, v in values.items()
-        )
-
-    action = actions[LANGUAGES.index(lang)]
-    phrasing = rng.randrange(3)
-    request = localized(
-        lang,
-        ("Please {a}.", "I need to {a}.", "Can you {a}?")[phrasing],
-        ("Por favor, {a}.", "Necesito {a}.", "¿Puedes {a}?")[phrasing],
-        ("Merci de {a}.", "Je souhaite {a}.", "Pouvez-vous {a} ?")[phrasing],
-    ).format(a=action)
-    evidence = [("claim", request + " " + details(given))]
+    evidence = [("claim", tool_request(rng, lang, tool, given))]
     if earlier:
         evidence.append(
             (
                 "claim",
                 localized(
                     lang,
-                    "Earlier user turn: ",
-                    "Turno anterior del usuario: ",
-                    "Message précédent de l'utilisateur : ",
+                    "Earlier the user said: I want to ",
+                    "Antes el usuario dijo: quiero ",
+                    "Le message précédent disait : je veux ",
                 )
-                + details(earlier),
+                + TOOLS[tool][2][LANGUAGES.index(lang)]
+                + " "
+                + " ".join(parameter_phrase(tool, p, v, lang) for p, v in earlier.items())
+                + ".",
             )
         )
     ambiguous = None
+    conflicting = {}
     if shape == "ambiguous":
         ambiguous = rng.choice(required)
-        other = rng.choice([v for v in VALUES[ambiguous] if v != given[ambiguous]])
+        other = rng.choice([
+            v for v in parameter_values(tool, ambiguous, lang) if v != given[ambiguous]
+        ])
+        conflicting[ambiguous] = other
         evidence.append(
             (
                 "claim",
                 localized(
                     lang,
-                    "Another unresolved candidate: ",
-                    "Otro candidato sin resolver: ",
-                    "Autre candidat non résolu : ",
+                    "In another turn the user said: I want to ",
+                    "En otro turno el usuario dijo: quiero ",
+                    "Dans un autre message : je veux ",
                 )
-                + details({ambiguous: other}),
+                + TOOLS[tool][2][LANGUAGES.index(lang)]
+                + " "
+                + parameter_phrase(tool, ambiguous, other, lang)
+                + ".",
             )
         )
     unresolved = [p for p in required if p not in given and p not in earlier]
@@ -449,6 +561,7 @@ def _scenario_tool(rng, lang):
         "earlier": earlier,
         "missing": unresolved,
         "ambiguous": ambiguous,
+        "conflicting": conflicting,
     }
     return result
 
@@ -563,7 +676,9 @@ def _scenario_ready(rng, lang):
 def _scenario_severity(rng, lang):
     component = rng.choice(COMPONENTS)
     checks = rng.sample(CHECKS, rng.randint(5, 12))
-    failing = set(rng.sample(checks, rng.randint(0, len(checks))))
+    target = rng.randrange(4)
+    failures = target if target < 3 else rng.randint(3, 5)
+    failing = set(rng.sample(checks, failures))
     evidence = [
         ("receipt", check_text(rng, lang, component, name, name in failing)) for name in checks
     ]
