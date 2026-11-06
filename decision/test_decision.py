@@ -27,6 +27,7 @@ sys.path.insert(0, str(HERE))
 import freeze  # noqa: E402
 import gen_synthetic  # noqa: E402
 import robustness  # noqa: E402
+sys.path.insert(0, str(HERE))  # fetch_public puts the repository root first, whose verify.py is another script
 import verify  # noqa: E402
 import splits  # noqa: E402
 from splits import Checker, RecordError, assign_split  # noqa: E402
