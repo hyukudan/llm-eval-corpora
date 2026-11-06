@@ -69,6 +69,79 @@ Frozen set (`freeze.py`: seed `20261029`, 6000 scenarios):
 
 `manifest.json` lists the sha256 of the data file and of each split, and the counts per family, language and family/language.
 
+## Synthetic v2
+
+`gen_synthetic_v2.py` adds `tool-select-v2` (32 tools, required versus optional
+parameters, omitted values, earlier turns and conflicting values),
+`ready-receipt-v2` (40% clean positives plus stale, wrong-component, failing,
+pending and claim-only cases), `severity-score-v2` (16 checks, warnings ignored)
+and `claim-review-v2` (matching, missing, conflicting or unrelated receipts and
+disagreeing claims). All four support en/es/fr and compute labels from scenario
+state. Tool requests use three sentence frames per operation and language,
+with shuffled or fronted parameter clauses, realistic places, dates, references
+and localized notes. Missing values are omitted without gap markers; earlier
+and conflicting turns retain their structured values in scenario metadata for
+label checks. Grade scenarios draw a uniform target level first, then use
+0, 1, 2 or 3–5 failures, preserving the rubric and ignored warnings.
+Completion and review receipts use concrete components, checks and counts;
+their label logic and sampling are unchanged. V1 and its frozen files remain
+unchanged.
+
+```
+python decision/gen_synthetic_v2.py --seed 1 --count 16000 --out pool.jsonl
+python decision/gen_synthetic_v2.py --seed 2 --count 4000 --families next_tool --exclude pool.jsonl --exclude decision/data/synthetic-v1.jsonl --out extra.jsonl
+```
+
+Count means scenarios, shared equally across the selected families; choice
+scenarios also emit a permuted child. Sorted generators and en/es/fr cycle in
+order. Groups start with `syn2-`; metadata records `decision-synth-v2`. Canonical
+JSONL bytes are deterministic for seed, count, selected families and exclusion
+contents. `--exclude` is repeatable and compares `splits.content_key`; excluded
+or repeated content is redrawn up to 32 times, then skipped. Run the tests with
+`python -m unittest discover -s decision -p "test_*.py"`; v2 tests include
+4,000 scenarios per family for each of seeds 1 and 2, requiring at least 90%
+novel seed-2 records against seed 1.
+
+Measured with 4,000 scenarios per family (choice children have the same
+content key as their parents):
+
+| Family | Seed-2 novel records vs seed 1 | Novelty |
+|---|---:|---:|
+| next_tool | 8,000 / 8,000 | 100% |
+| completion | 8,000 / 8,000 | 100% |
+| grade | 4,000 / 4,000 | 100% |
+| review_need | 7,978 / 8,000 | 99.725% |
+
+Seed 7001, 4,000 scenarios **per family**, counting parents only:
+
+| Family | Label counts |
+|---|---|
+| next_tool | call_* 1,971; ask 1,548; none 481 |
+| completion | missing_evidence 1,626; missing_work 776; ready_to_validate 1,598 |
+| grade | level0 994; level1 1,016; level2 986; level3 1,004 |
+| review_need | clarify 1,566; continue 817; semantic_review 1,617 |
+
+Individual next_tool call labels for the same run:
+
+| Label | Count | Label | Count |
+|---|---:|---|---:|
+| call_archive_document | 59 | call_renew_loan | 59 |
+| call_book_ferry | 56 | call_rent_bicycle | 72 |
+| call_book_train | 61 | call_rent_rackets | 68 |
+| call_calculate_area | 51 | call_reserve_court | 55 |
+| call_cancel_exhibit | 67 | call_reserve_exhibit | 67 |
+| call_cancel_room | 55 | call_reserve_microscope | 70 |
+| call_check_inventory | 66 | call_reserve_room | 60 |
+| call_convert_units | 55 | call_reserve_telescope | 73 |
+| call_create_backup | 56 | call_restore_backup | 59 |
+| call_inspect_garden | 70 | call_retrieve_document | 42 |
+| call_move_inventory | 68 | call_return_bicycle | 43 |
+| call_order_books | 62 | call_scan_poster | 74 |
+| call_order_meal | 58 | call_schedule_repair | 67 |
+| call_plan_menu | 50 | call_ship_parcel | 70 |
+| call_print_poster | 53 | call_track_parcel | 76 |
+| call_quote_repair | 62 | call_water_garden | 67 |
+
 ## Split rule
 
 `splits.py` assigns a split from the record's `group` alone:
