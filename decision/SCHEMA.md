@@ -21,7 +21,7 @@ tokens). Every record, synthetic or converted, has exactly these keys:
 | `split` | string | `train`, `dev`, `calibration`, `test`, `external_dev` or `external_test`. |
 | `licence` | string | SPDX identifier of the record's licence (`CC-BY-4.0`). |
 | `attribution` | string | Attribution text required by that licence. |
-| `meta` | object | Provenance that the model does not see: generator version, seed, index and variant; or upstream id, locale, partition and file. |
+| `meta` | object | Provenance that the model does not see: generator version, seed, index and variant; or upstream id, locale, partition and file. Optional `meta.time_block` (see below). Robustness records: `perturbation`, `source_id`, `robustness_version` and the source's meta under `source_meta`. |
 
 `context`:
 
@@ -36,6 +36,10 @@ tokens). Every record, synthetic or converted, has exactly these keys:
 
 Rules:
 
+- `meta.time_block` (optional): `"YYYY-MM-DD"` or `"YYYY-MM"`, a real calendar
+  date. When present, the split is hashed from (family, time block) instead
+  of the group (`decision-split-v1-timeblock`, see README.md), and all records
+  of a group must share the same family and time block.
 - `kind: yes_no` options are `yes`, `no` and an optional insufficient option, in that order.
 - `answer` is always one of the option ids.
 - The canonical serialisation of a record is at most 32 KiB.

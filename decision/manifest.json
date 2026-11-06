@@ -228,6 +228,34 @@
       ]
     }
   },
+  "robustness": {
+    "by_family": {
+      "classify": 492,
+      "completion": 616,
+      "effort": 176,
+      "entail": 107,
+      "grade": 18,
+      "next_tool": 244,
+      "review_need": 36,
+      "route": 6
+    },
+    "by_perturbation": {
+      "distractor_evidence": 538,
+      "evidence_reverse": 351,
+      "neutral_ids": 403,
+      "option_reverse": 403
+    },
+    "count": 1695,
+    "file": "data/robustness-v1.jsonl",
+    "file_sha256": "bd3f71762f5a232abaa88e2646ed5146e58e5493831dd85b28695060d637756e",
+    "licence": "CC-BY-4.0",
+    "skipped_over_limits": 0,
+    "sources": {
+      "authored_test_sha256": "fa38adb19a7c74551c763467ce5fc8f9f49b247ae3cdc4af329a2119dd88a7f7",
+      "synthetic_test_sha256": "055ae97fc488f5225c7bada0a8254cefdee62fc24c6e69f906de31427c76b2d3"
+    },
+    "version": "decision-robustness-v1"
+  },
   "schema": "llm-eval-corpora/decision-manifest-v1",
   "split_rule": {
     "bounds": [
